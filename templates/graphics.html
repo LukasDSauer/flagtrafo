@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <title>Flag complex transformator</title>
+
+    <script type="text/javascript" src="http://www.json.org/json2.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="{{ url_for('static',filename='scripts/graphics.js') }}"></script>
+</head>
+<style>
+
+    body {
+        margin: 0;
+        background: #ffffff;
+        min-width: 960px;
+    }
+
+    line {
+        stroke: #393939;
+        stroke-width: 1.5px;
+    }
+
+    circle {
+        fill: #393939;
+        stroke: #333333;
+        stroke-width: 2.5px;
+    }
+
+    .slider {
+        -webkit-appearance: none;
+        width: 50%;
+        height: 10px;
+        border-radius: 5px;
+        background: #DDDDDD;
+        outline: none;
+        opacity: 1.0;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        border-radius: 100%;
+        background: #9b4dca;
+        border-color: #9b4dca;
+        cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+        width: 15px;
+        height: 15px;
+        border-radius: 100%;
+        background: #9b4dca;
+        border-color: #9b4dca;
+
+        cursor: pointer;
+    }
+
+</style>
+<body>
+{% extends "template.html" %}
+{% block content %}
+    <section class="container">
+            <section class="row-top">
+                <b><i>Hint: </i></b><i id="mode-description">Hover over grey canvas to start. Left click to add
+                point.</i>
+            </section>
+            <div class="row">
+                <div class="column column-20">
+                    <form>
+                        <fieldset>
+                            <input class="button-primary" type="button"
+                                   id="add_flag_buttonb"
+                                   value="Finish">
+                        </fieldset>
+                    </form>
+                    <label>
+                      <input type="checkbox" name="withInner">
+                          Inner triangle
+                    </label>
+                    <label>
+                      <input type="checkbox" name="withMiddle">
+                          Middle Triangle
+                    </label>
+                </div>
+                <div class="column column-80" id="canvas01"></div>
+            </div>
+
+            <section class="row">
+                <div class="column column-50">
+                    <form name="projection_plane_form">
+                        <fieldset>
+                            <label form="projection_plane_form">Projection plane</label>
+                            <input type="text" name="ppx" placeholder="x" id="ppx"
+                                   style="display: inline; white-space: nowrap; width: 15%">
+                            <input type="text" name="ppy" placeholder="y" id="ppy"
+                                   style="display: inline; white-space: nowrap; width: 15%">
+                            <input type="text" name="ppz" placeholder="z" id="ppz"
+                                   style="display: inline; white-space: nowrap; width: 15%">
+                            <!--Type must be button, not submit. Otherwise, the page would be refreshed every time.-->
+                            <input class="button-primary" type="button" value="Set" id="ppsubmit">
+                        </fieldset>
+                    </form>
+                </div>
+                <div class="column column-50">
+                    <label>Eruption flow transformation</label>
+                    Value: <span id="trafovalue">0</span>
+                    <div class="slidecontainer">
+                        <input type="range" min="-1000" max="1000" value="0" class="slider" id="traforange">
+                    </div>
+                </div>
+            </section>
+    </section>
+    </body>
+    <script type="text/javascript" src="//d3js.org/d3.v5.min.js"></script>
+    <script type="text/javascript">
+        //
+
+        // sensible values are "addPoints", "addLines" and "standard"
+        var program_mode = "addPoints";
+
+        var n = 0;
+
+        var ps_2dim = {};
+        var ds_2dim = {};
+        var us_2dim = {};
+
+        var t = 0;
+        var t_str = "0";
+
+        var trafo_data;
+
+        var width = Math.min(2000, document.getElementById("canvas01").offsetWidth - 100),
+            height = Math.min(2000, innerHeight - 200);
+
+
+
+
+        var svg = d3.select("#canvas01").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .style("background-color", "#DDDDDD");
+        svg.on("mousemove", mouseMovePointOrLine)
+            .on("click", mouseClickPointOrLine);
+
+        var fixedCoordinates = [0, 0];
+        var liveCoordinates = [0, 0];
+
+        /**
+         * Listeners for buttons and sliders.
+         */
+        // The "Add flag" button
+        $(document).ready(function () {
+            $("#add_flag_buttonb").click(function () {
+                submitFlags();
+            });
+        });
+
+        // The "Submit projection plane" button
+        $(document).ready(function () {
+            $("#ppsubmit").click(function () {
+                submitProjectionPlane();
+            });
+        });
+
+        // The slider for transformation
+        var slider = document.getElementById("traforange");
+        document.getElementById("trafovalue").innerHTML = 0; // Display the default slider value
+        slider.oninput = function () {
+            // Round to two decimals (value between -10.01 and
+            document.getElementById("trafovalue").innerHTML = Math.round((this.value / 100 + 0.00001) * 100) / 100;
+            t = this.value;
+            t_str = t.toString();
+            //console.log(trafo_data);
+            ps_2dim = trafo_data[t_str]["ps"];
+            ls_2dim = trafo_data[t_str]["ls"];
+            us_2dim = trafo_data[t_str]["us"];
+            refreshCanvas();
+        };
+
+        // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
+        $('input[name=withInner]').change(function(){
+            if($(this).is(':checked')) {
+                //console.log(us_2dim);
+                //console.log(ps_2dim);
+                drawPoints(us_2dim, "u_point", "#8b31ca")
+                drawTriangle(us_2dim, "u_line", "#8b31ca");
+            } else {
+                svg.selectAll("#u_point").remove();
+                svg.selectAll("#u_line").remove();
+            }
+        });
+
+        // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
+        $('input[name=withMiddle]').change(function(){
+            if($(this).is(':checked')) {
+                drawPoints(ps_2dim, "p_point", "#3ecabd")
+                drawTriangle(ps_2dim, "p_line", "#3ecabd");
+            } else {
+                svg.selectAll("#p_point").remove();
+                svg.selectAll("#p_line").remove();
+            }
+        });
+
+    </script>
+
+{% endblock %}
+
+
+</html>

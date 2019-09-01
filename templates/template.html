@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Lukas Sauer">
+		<meta name="description" content="A web application for visualizing transformations of flags in the projective plane.">
+		<title>HITS | Flag deformator.</title>
+		<link rel="icon" href="{{ url_for('static',filename='images/favicon.ico') }}">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+		<link rel="stylesheet" href="{{ url_for('static',filename='lib/normalize.css/normalize.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static',filename='lib/milligram/dist/milligram.min.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static',filename='styles/main.css') }}">
+
+	</head>
+	<body>
+
+		<main class="wrapper">
+         <div class="topnav">
+  <a class="active" href="{{ url_for('home')}}">Home</a>
+  <a href="{{ url_for('graphics')}}">Projective Flag Deformator</a>
+  <a href="{{ url_for('about')}}">About</a>
+</div>
+
+            {% block content %}
+            {% endblock %}
+
+			<footer class="footer">
+				<section class="container">
+					<p>Heidelberg Institute of Theoretical Studies 2019. Designed using Flask, Milligram.css, and D3.js.</p>
+				</section>
+			</footer>
+
+		</main>
+
+
+	</body>
+</html>
