@@ -66,8 +66,8 @@
 {% block content %}
     <section class="container">
             <section class="row-top">
-                <b><i>Hint: </i></b><i id="mode-description">Hover over grey canvas to start. Left click to add
-                point.</i>
+                <b>Hint: </b><span id="mode-description">Hover over grey canvas to start. Left click to add
+                point.</span>
             </section>
             <div class="row">
                 <div class="column column-20">
@@ -75,26 +75,34 @@
                         <fieldset>
                             <input class="button-primary" type="button"
                                    id="add_flag_buttonb"
-                                   value="Finish">
+                                   value="Finish" style="display:block">
+                             <div class="loader" style="display:none" id="loader-flags"></div>
                         </fieldset>
                     </form>
+                    <div style="display:none" id="checkboxes-triangle">
                     <label>
-                      <input type="checkbox" name="withInner">
+                      <input type="checkbox" name="withInner" autocomplete="off" />
                           Inner triangle
                     </label>
                     <label>
-                      <input type="checkbox" name="withMiddle">
+                      <input type="checkbox" name="withMiddle" autocomplete="off" />
                           Middle Triangle
                     </label>
+                        <label>
+                      <input type="checkbox" name="withHelper" autocomplete="off" />
+                          Helper Lines
+                    </label>
+                    </div>
                 </div>
                 <div class="column column-80" id="canvas01"></div>
             </div>
 
             <section class="row">
                 <div class="column column-50">
-                    <form name="projection_plane_form">
+                    <form name="projection_plane_form" id="proj-plane-form" style="display:none">
                         <fieldset>
-                            <label form="projection_plane_form">Projection plane</label>
+                            <label form="projection_plane_form">Projection plane:
+                                <span id="pplane-value">(0, 0, 1)</span></label>
                             <input type="text" name="ppx" placeholder="x" id="ppx"
                                    style="display: inline; white-space: nowrap; width: 15%">
                             <input type="text" name="ppy" placeholder="y" id="ppy"
@@ -106,11 +114,11 @@
                         </fieldset>
                     </form>
                 </div>
-                <div class="column column-50">
-                    <label>Eruption flow transformation</label>
-                    Value: <span id="trafovalue">0</span>
+                <div class="column column-50" id="transformator" style="display:none">
+                    <label>Eruption flow transformation: <span id="trafovalue">0</span>
+</label>
                     <div class="slidecontainer">
-                        <input type="range" min="-1000" max="1000" value="0" class="slider" id="traforange">
+                        <input type="range" min="-1000" max="1000" value="0" class="slider" id="traforange"/>
                     </div>
                 </div>
             </section>
@@ -127,7 +135,10 @@
 
         var ps_2dim = {};
         var ds_2dim = {};
+        var qs_2dim = {};
         var us_2dim = {};
+
+        var proj_plane = [0, 0, 1];
 
         var t = 0;
         var t_str = "0";
@@ -177,12 +188,12 @@
             t_str = t.toString();
             //console.log(trafo_data);
             ps_2dim = trafo_data[t_str]["ps"];
-            ls_2dim = trafo_data[t_str]["ls"];
+            qs_2dim = trafo_data[t_str]["qs"];
             us_2dim = trafo_data[t_str]["us"];
             refreshCanvas();
         };
 
-        // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
+        // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
         $('input[name=withInner]').change(function(){
             if($(this).is(':checked')) {
                 //console.log(us_2dim);
@@ -203,6 +214,15 @@
             } else {
                 svg.selectAll("#p_point").remove();
                 svg.selectAll("#p_line").remove();
+            }
+        });
+
+        // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
+        $('input[name=withHelper]').change(function(){
+            if($(this).is(':checked')) {
+                drawHelperLines(ps_2dim, qs_2dim, "helper_line", "#efefef")
+            } else {
+                svg.selectAll("#helper_line").remove();
             }
         });
 

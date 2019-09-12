@@ -4,6 +4,7 @@ function refreshCanvas() {
     updatePoints(ps_2dim, "#p_point")
     updateTriangle(us_2dim, "#u_line");
     updateTriangle(ps_2dim, "#p_line");
+    updateHelperLines(ps_2dim, qs_2dim, "#helper_line")
 
 
     var line_data = [];
@@ -37,6 +38,11 @@ function refreshCanvas() {
 function submitFlags() {
     if (program_mode == "addPoints" || program_mode == "addLines") {
         console.info("Sending flags to server!");
+
+        document.getElementById('add_flag_buttonb').style.display = "none";
+        document.getElementById('loader-flags').style.display = "block";
+        document.getElementById('mode-description').innerHTML = "";
+
         svg.selectAll("#newpoint").remove();
         svg.selectAll("#newline").remove();
         document.getElementById('add_flag_buttonb').value = "Add flags";
@@ -65,18 +71,29 @@ function submitFlags() {
             .done(function (data) {
                 console.log(data);
                 trafo_data = data;
+                ps_2dim = trafo_data[t_str]["ps"];
+                qs_2dim = trafo_data[t_str]["qs"]
                 us_2dim = trafo_data[t_str]["us"];
+                document.getElementById('loader-flags').style.display = "none";
+                document.getElementById('add_flag_buttonb').style.display = "block";
+                document.getElementById('checkboxes-triangle').style.display = "block";
+                document.getElementById('transformator').style.display = "block";
+                document.getElementById('proj-plane-form').style.display = "inline";
+                document.getElementById('mode-description').innerHTML =
+            "Move slider to transform.";
             });
 
-        document.getElementById('mode-description').innerHTML =
-            "Move slider to transform. Perhaps you have to wiggle "+
-        "and let loose several times.";
+
 
 
     }
     else if (program_mode== "standard"){
-        console.info("Entering standard!")
+        console.info("Add flag mode!")
         program_mode = "addPoints";
+        document.getElementById('add_flag_buttonb').style.display = "none";
+        document.getElementById('checkboxes-triangle').style.display = "none";
+        document.getElementById('transformator').style.display = "none";
+        document.getElementById('proj-plane-form').style.display = "none";
         document.getElementById('add_flag_buttonb').value = "Finish";
         svg.on("mousemove", mouseMovePointOrLine)
             .on("click", mouseClickPointOrLine);
@@ -228,12 +245,13 @@ function submitProjectionPlane() {
                 ds_2dim = data.ls;
                 //$('#mode-description').text(data.ps).show();
                 refreshCanvas();
+                document.getElementById("pplane-value").innerHTML = "("+p_plane[0]+", "+p_plane[1]+", "+p_plane[2]+")";
                 });
 
 }
 
 function drawPoints(data, id, color){
-    var circle = svg.selectAll("#u_point")
+    var circle = svg.selectAll(id)
                 .data(data);
     circle.exit().remove();
 
@@ -263,6 +281,18 @@ function drawTriangle(data, id, color){
     }
 }
 
+function drawHelperLines(data_middle, data_outer, id, color){
+    for (var i=0; data_middle.length-1; i++){
+        svg.append("line")
+        .attr("id", id)
+        .style('stroke', color)
+        .attr("x1", data_middle[i][0])
+        .attr("y1", data_middle[i][1])
+        .attr("x2", data_outer[(i+2)%3][0])
+        .attr("y2", data_outer[(i+2)%3][1]);
+    }
+}
+
 function updateTriangle(data, id){
     var index = [0, 1, 2];
     svg.selectAll(id)
@@ -281,6 +311,24 @@ function updatePoints(data, id){
         })
         .attr("cy", function (d) {
             return d[1];
+        });
+}
+
+function updateHelperLines(middle_data, outer_data, id) {
+    var index = [0, 1, 2];
+    svg.selectAll(id)
+        .data(index)
+        .attr("x1", function (i) {
+            return middle_data[i][0];
+        })
+        .attr("y1", function (i) {
+            return middle_data[i][1];
+        })
+        .attr("x2", function (i) {
+            return outer_data[(i + 2) % 3][0];
+        })
+        .attr("y2", function (i) {
+            return outer_data[(i + 2) % 3][1];
         });
 }
 
