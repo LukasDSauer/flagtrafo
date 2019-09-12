@@ -6,7 +6,6 @@ function refreshCanvas() {
     updateTriangle(ps_2dim, "#p_line");
     updateHelperLines(ps_2dim, qs_2dim, "#helper_line")
 
-
     var line_data = [];
 
     for (var i = 0; i < n; i++) {
@@ -18,30 +17,41 @@ function refreshCanvas() {
 
     }
 
-
     svg.selectAll("#line")
         .data(line_data)
-        .attr("x1", function (d) {
-            return d["x1"];
-        })
-        .attr("y1", function (d) {
-            return d["y1"];
-        })
-        .attr("x2", function (d) {
-            return d["x2"];
-        })
-        .attr("y2", function (d) {
-            return d["y2"];
-        })
+        .attr("x1", function (d) {return d["x1"];})
+        .attr("y1", function (d) {return d["y1"];})
+        .attr("x2", function (d) {return d["x2"];})
+        .attr("y2", function (d) {return d["y2"];})
 }
 
-function submitFlags() {
-    if (program_mode == "addPoints" || program_mode == "addLines") {
-        console.info("Sending flags to server!");
+function hideEditingElements(){
+    document.getElementById('add_flag_buttonb').style.display = "none";
+    document.getElementById('checkboxes-triangle').style.display = "none";
+    document.getElementById('transformator').style.display = "none";
+    document.getElementById('proj-plane-form').style.display = "none";
+}
+function hideLoader(){
+    document.getElementById('loader-flags').style.display = "none";
+}
 
-        document.getElementById('add_flag_buttonb').style.display = "none";
-        document.getElementById('loader-flags').style.display = "block";
-        document.getElementById('mode-description').innerHTML = "";
+function showEditingElements() {
+    document.getElementById('add_flag_buttonb').style.display = "block";
+    document.getElementById('checkboxes-triangle').style.display = "block";
+    document.getElementById('transformator').style.display = "block";
+    document.getElementById('proj-plane-form').style.display = "inline";
+}
+function showLoader(){
+    document.getElementById('loader-flags').style.display = "block";
+}
+
+function submitFlagsToServer(){
+    console.info("Sending flags to server!");
+
+        hideEditingElements();
+        showLoader();
+        document.getElementById('hint-type').style.display = "none";
+        document.getElementById('mode-description').innerHTML = "Loading transformation data.";
 
         svg.selectAll("#newpoint").remove();
         svg.selectAll("#newline").remove();
@@ -49,51 +59,44 @@ function submitFlags() {
         program_mode = "standard";
         var data = {
             "ps": ps_2dim,
-            "ds": ds_2dim
+            "ds": ds_2dim,
+            "pplane": proj_plane
         };
         data = JSON.stringify(data);
-        $.ajax({
-            type: "POST",
-            url: '/flagcomplex/add_flags',
-            data: data,
-            success: function () {
-            },
-            dataType: "json",
-            contentType: "application/json; charset=utf-8"
-        });
+        console.log(data);
 
         $.ajax({
             type: "POST",
-            url: '/flagcomplex/get_eruption_flow',
+            url: '/flagcomplex/get_transformation_data',
+            data: data,
             dataType: "json",
             contentType: "application/json; charset=utf-8"
         })
             .done(function (data) {
-                console.log(data);
+                //console.log(data);
                 trafo_data = data;
                 ps_2dim = trafo_data[t_str]["ps"];
-                qs_2dim = trafo_data[t_str]["qs"]
+                qs_2dim = trafo_data[t_str]["qs"];
+                // From now on, we can use the qs for the ds, as they simply are another point on the line,
+                // and this is all that we need.
+                ds_2dim = trafo_data[t_str]["qs"];
                 us_2dim = trafo_data[t_str]["us"];
-                document.getElementById('loader-flags').style.display = "none";
-                document.getElementById('add_flag_buttonb').style.display = "block";
-                document.getElementById('checkboxes-triangle').style.display = "block";
-                document.getElementById('transformator').style.display = "block";
-                document.getElementById('proj-plane-form').style.display = "inline";
+                hideLoader();
+                showEditingElements();
+                document.getElementById('hint-type').style.display = "inline";
                 document.getElementById('mode-description').innerHTML =
             "Move slider to transform.";
             });
+}
 
-
-
-
+function submitFlagsButton() {
+    if (program_mode == "addPoints" || program_mode == "addLines") {
+        submitFlagsToServer();
     }
     else if (program_mode== "standard"){
         console.info("Add flag mode!")
         program_mode = "addPoints";
-        document.getElementById('add_flag_buttonb').style.display = "none";
-        document.getElementById('checkboxes-triangle').style.display = "none";
-        document.getElementById('transformator').style.display = "none";
-        document.getElementById('proj-plane-form').style.display = "none";
+        hideEditingElements();
         document.getElementById('add_flag_buttonb').value = "Finish";
         svg.on("mousemove", mouseMovePointOrLine)
             .on("click", mouseClickPointOrLine);
@@ -173,7 +176,6 @@ function addPoint(coordinates) {
 
     circle.exit().remove();
 
-
     circle.enter().append("circle")
         .attr("id", "newpoint")
         .attr("r", 2.5)
@@ -202,7 +204,6 @@ function addLine(fixedCoordinates, liveCoordinates) {
 
     line.exit().remove();
 
-
     line.enter().append("line")
         .attr("id", "newline")
         .merge(line)
@@ -222,32 +223,15 @@ function addLine(fixedCoordinates, liveCoordinates) {
 
 
     d3.event.preventDefault();
-
 }
 
 function submitProjectionPlane() {
-            var p_plane = [parseFloat($("#ppx").val()),
+            proj_plane = [parseFloat($("#ppx").val()),
                 parseFloat($("#ppy").val()),
                 parseFloat($("#ppz").val())];
-            var form_data = {"pp": p_plane};
-            form_data = JSON.stringify(form_data);
-
-            $.ajax({
-                type: "POST",
-                url: '/flagcomplex/set_projection_plane',
-                data: form_data,
-                dataType: "json",
-                contentType: "application/json; charset=utf-8"
-            })
-            .done(function(data) {
-                console.log(data.ps);
-                ps_2dim = data.ps;
-                ds_2dim = data.ls;
-                //$('#mode-description').text(data.ps).show();
-                refreshCanvas();
-                document.getElementById("pplane-value").innerHTML = "("+p_plane[0]+", "+p_plane[1]+", "+p_plane[2]+")";
-                });
-
+            submitFlagsToServer();
+            refreshCanvas();
+            document.getElementById("pplane-value").innerHTML = "("+proj_plane[0]+", "+proj_plane[1]+", "+proj_plane[2]+")";
 }
 
 function drawPoints(data, id, color){

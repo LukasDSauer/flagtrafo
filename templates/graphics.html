@@ -66,7 +66,7 @@
 {% block content %}
     <section class="container">
             <section class="row-top">
-                <b>Hint: </b><span id="mode-description">Hover over grey canvas to start. Left click to add
+                <b id="hint-type">Hint: </b><span id="mode-description">Hover over grey canvas to start. Left click to add
                 point.</span>
             </section>
             <div class="row">
@@ -133,10 +133,10 @@
 
         var n = 0;
 
-        var ps_2dim = {};
-        var ds_2dim = {};
-        var qs_2dim = {};
-        var us_2dim = {};
+        var ps_2dim = [];
+        var ds_2dim = [];
+        var qs_2dim = [];
+        var us_2dim = [];
 
         var proj_plane = [0, 0, 1];
 
@@ -147,9 +147,6 @@
 
         var width = Math.min(2000, document.getElementById("canvas01").offsetWidth - 100),
             height = Math.min(2000, innerHeight - 200);
-
-
-
 
         var svg = d3.select("#canvas01").append("svg")
             .attr("width", width)
@@ -167,7 +164,7 @@
         // The "Add flag" button
         $(document).ready(function () {
             $("#add_flag_buttonb").click(function () {
-                submitFlags();
+                submitFlagsButton();
             });
         });
 
