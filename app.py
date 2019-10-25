@@ -1,8 +1,10 @@
+import sys
+sys.path.append('services/flagcomplex/')
 
 from flask import Flask, render_template, request, jsonify
 from flask_json import FlaskJSON, JsonError, json_response, as_json
-from services.flagcomplex.FlagComplex import FlagComplex
-#import json
+from FlagComplex import FlagComplex
+from EuklGeometryUtility import rotate_vectors
 import numpy as np
 
 app = Flask(__name__)
@@ -39,12 +41,25 @@ def get_transformation_data():
     n = len(data['ps'])
     # Adding all flags to the flag complex object
     app.logger.info("Adding " + str(n) + " flags to the python flag complex object.")
-    for i in range(n):
-        p = data['ps'][i]
-        p.append(100.0)
-        direction = data['ds'][i]
-        direction.append(100.0)
-        fcomplex.add_flag(p, direction)
+    if pplane == [0, 0, 1]:
+        for i in range(n):
+            p = data['ps'][i]
+            p.append(100.0)
+            direction = data['ds'][i]
+            direction.append(100.0)
+            fcomplex.add_flag(p, direction)
+    else:
+        for i in range(n):
+            p = data['ps'][i]
+            p.append(100.0)
+            direction = data['ds'][i]
+            direction.append(100.0)
+            rotation_matrix = rotate_vectors(np.array(pplane), np.array([0, 0, 1]))
+            p = np.matmul(rotation_matrix, p)
+            direction = np.matmul(rotation_matrix, direction)
+
+            fcomplex.add_flag(p, direction)
+
 
     # Computing eruption flow data
     fcomplex.create_triangulation()
@@ -61,6 +76,8 @@ def get_transformation_data():
         us = fcomplex.get_inner_triangle(triangle)
         drawus = [(fcomplex.get_two_dimensional_point(x) * 100).tolist() for x in us]
         data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
+    app.logger.info("Data successfully computed!")
+    app.logger.info(data)
     return jsonify(data)
 
 #@app.before_request

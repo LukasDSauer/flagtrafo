@@ -1,5 +1,4 @@
 #  Developed by Lukas Sauer at the Heidelberg Institute of Theoretical Studies on 2/19/19 6:36 PM.
-#  Contact: lukas.sauer@h-its.org.
 #  Last modified on 2/19/19 6:36 PM.
 #  (C) 2019. All rights reserved.
 
@@ -14,7 +13,6 @@ def project_point(n, p):
     :param n: the normal vector of the projection plane
     :param p: a projective point (a three-dimensional numpy array)
     :return:
-    :author: Sven Gruetzmacher
     """
 
     if la.norm(n) != 1:
@@ -47,7 +45,6 @@ def line_intersection(l1, l2):
     :param l1: a vector defining the first linear form (a 3-dim numpy array)
     :param l2: a vector defining the second linear form (a 3-dim numpy array)
     :return: the intersection point (a 3-dim numpy array)
-    :author:
     """
     return np.cross(l1, l2)
 
@@ -99,7 +96,7 @@ def transform_standard_to_four_points(points):
     :param points: a list of four three-dim. numpy arrays
     :return: a 3x3- numpy-array
     """
-    b = np.column_stack((points[i] for i in range(3)))
+    b = np.column_stack([points[i] for i in range(3)])
 
     nu = np.matmul(la.inv(b), points[3])
 
@@ -122,12 +119,8 @@ def get_reflection(l, v):
     :param l: a three-dim numpy array
     :param v: a three-dim numpy array
     :return: a three times three numpy array
-    :author: Sven Gruetzmacher
     """
     if not np.matmul(l.T, v) == 2:
         l = np.multiply(2/np.dot(l, v), l)
     ref = np.matmul(np.reshape(v, (3, 1)), np.reshape(l.T, (1, 3)))
     return np.eye(3) - ref
-
-
-

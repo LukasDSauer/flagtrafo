@@ -1,5 +1,4 @@
 #  Developed by Lukas Sauer at the Heidelberg Institute of Theoretical Studies on 2/20/19 10:51 AM.
-#  Contact: lukas.sauer@h-its.org.
 #  Last modified on 2/20/19 10:51 AM.
 #  (C) 2019. All rights reserved.
 
@@ -8,7 +7,6 @@ import numpy as np
 from numpy import linalg as la
 import colorsys as cl
 
-# Helper functions mainly written by Sven Gruetzmacher
 # All this function take two-dimensional euclidean real coordinates
 
 def draw_flag(d, p, dir, col = "black", t = 30, wop=False, label = ""):
@@ -21,7 +19,6 @@ def draw_flag(d, p, dir, col = "black", t = 30, wop=False, label = ""):
     :param col: a color that is accepted by colorsys
     :param t: the length of the line
     :return:
-    :author: Sven Gruetzmacher
     """
     if not wop:
         drawpt(d, p, col=col)
@@ -39,18 +36,54 @@ def draw_flag(d, p, dir, col = "black", t = 30, wop=False, label = ""):
             d.append(draw.Text(label, 10, 100 * p[0], 100 * p[1], center=3, fill='blue'))
 
 def drawpt(d, x, col="blue"):
+    """
+    Draws a point as a small circle.
+
+    :param d: a drawSvg drawing for the output
+    :param x: coordinates of the point
+    :param col: a color that is accepted by colorsys
+    :return:
+    """
     d.append(draw.Circle(100 * x[0], 100 * x[1], 2, fill=col, stroke_width=1, stroke=col))
 
 
 def drawcirc(d, x, r, col="white"):
+    """
+    Draw a circle with specified radius.
+
+    :param d: a drawSvg drawing for the output
+    :param x: coordinates of the center
+    :param r: the radius
+    :param col: a color that is accepted by colorsys
+    :return:
+    """
     d.append(draw.Circle(100 * x[0], 100 * x[1], 100 * r, fill=col, stroke_width=1, stroke=col))
 
 
 def drawl(d, x, y, col="black"):
+    """
+    Draws a line between two points.
+
+    :param d: a drawSvg drawing for the output
+    :param x: start coordinates
+    :param y: end coordinates
+    :param col: a color that is accepted by colorsys
+    :return:
+    """
     d.append(draw.Lines(100 * x[0], 100 * x[1], 100 * y[0], 100 * y[1], close=False, stroke=col))
 
 
 def drawtri(d, p, col="blue", pts=True, fill=0.0):
+    """
+    Draws a triangle spanned by three points.
+
+    :param d: a drawSvg drawing for the output
+    :param p: a list of three coordinates
+    :param col: a color that is accepted by colorsys
+    :param pts: a boolean value, specifying whether the points should be drawn as circles
+    :param fill: intensity of the filling color of the triangle
+    :return:
+    """
     if pts:
         for x in p:
             drawpt(d, x, col)
@@ -66,6 +99,16 @@ def drawtri(d, p, col="blue", pts=True, fill=0.0):
 
 
 def drawquad(d, p, col="blue", pts=False, fill=0.0):
+    """
+    Draws a quadrilateral spanned by four points.
+
+    :param d: a drawSvg drawing for the output
+    :param p: a list of four coordinates
+    :param col: a color that is accepted by colorsys
+    :param pts: a boolean value, specifying whether the points should be drawn as circles
+    :param fill: intensity of the filling color of the quadrilateral
+    :return:
+    """
     if pts:
         for x in p:
             drawpt(d, x, col)
@@ -90,7 +133,6 @@ def draw_polygon(d, polygon, col=["#7575ff", "#75ff75", "#ff7575"], wop = True):
     :param polygon: A list of points
     :param col: A list of colours
     :return:
-    :author: Lukas Sauer
     """
     length = len(polygon)
 
@@ -116,7 +158,6 @@ def draw_path(d, points, col="blue", fillcol=None, wop=True, fill=0.0, width=2):
     :param fill:
     :param width:
     :return:
-    :author: Sven Gruetzmacher.
     """
     if fillcol is None:
         fillcol = col

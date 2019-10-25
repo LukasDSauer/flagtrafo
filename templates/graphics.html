@@ -65,98 +65,114 @@
 {% extends "template.html" %}
 {% block content %}
     <section class="container">
-            <section class="row-top">
-                <b id="hint-type">Hint: </b><span id="mode-description">Hover over grey canvas to start. Left click to add
+        <section class="row-top">
+            <b id="hint-type">Hint: </b><span id="mode-description">Hover over grey canvas to start. Left click to add
                 point.</span>
-            </section>
-            <div class="row">
-                <div class="column column-20">
-                    <form>
-                        <fieldset>
-                            <input class="button-primary" type="button"
-                                   id="add_flag_buttonb"
-                                   value="Finish" style="display:block">
-                             <div class="loader" style="display:none" id="loader-flags"></div>
-                        </fieldset>
-                    </form>
-                    <div style="display:none" id="checkboxes-triangle">
+        </section>
+        <div class="row">
+            <div class="column column-20">
+                <form>
+                    <fieldset>
+                        <input class="button-primary" type="button"
+                               id="add_flag_buttonb"
+                               value="Finish" style="display:block">
+                        <div class="loader" style="display:none" id="loader-flags"></div>
+                    </fieldset>
+                </form>
+                <div style="display:none" id="checkboxes-triangle">
                     <label>
-                      <input type="checkbox" name="withInner" autocomplete="off" />
-                          Inner triangle
+                        <input type="checkbox" name="withInner" autocomplete="off"/>
+                        Inner triangle
                     </label>
                     <label>
-                      <input type="checkbox" name="withMiddle" autocomplete="off" />
-                          Middle Triangle
+                        <input type="checkbox" name="withMiddle" autocomplete="off"/>
+                        Middle Triangle
                     </label>
-                        <label>
-                      <input type="checkbox" name="withHelper" autocomplete="off" />
-                          Helper Lines
+                    <label>
+                        <input type="checkbox" name="withHelper" autocomplete="off"/>
+                        Helper Lines
                     </label>
-                    </div>
                 </div>
-                <div class="column column-80" id="canvas01"></div>
             </div>
+            <div class="column column-80" id="canvas01"></div>
+        </div>
 
-            <section class="row">
-                <div class="column column-50">
-                    <form name="projection_plane_form" id="proj-plane-form" style="display:none">
-                        <fieldset>
-                            <label form="projection_plane_form">Projection plane:
-                                <span id="pplane-value">(0, 0, 1)</span></label>
-                            <input type="text" name="ppx" placeholder="x" id="ppx"
-                                   style="display: inline; white-space: nowrap; width: 15%">
-                            <input type="text" name="ppy" placeholder="y" id="ppy"
-                                   style="display: inline; white-space: nowrap; width: 15%">
-                            <input type="text" name="ppz" placeholder="z" id="ppz"
-                                   style="display: inline; white-space: nowrap; width: 15%">
-                            <!--Type must be button, not submit. Otherwise, the page would be refreshed every time.-->
-                            <input class="button-primary" type="button" value="Set" id="ppsubmit">
-                        </fieldset>
-                    </form>
+        <section class="row">
+            <div class="column column-50">
+                <form name="projection_plane_form" id="proj-plane-form" style="display:none">
+                    <fieldset>
+                        <label form="projection_plane_form">Projection plane:
+                            <span id="pplane-value">(0, 0, 1)</span></label>
+                        <input type="text" name="ppx" placeholder="x" id="ppx"
+                               style="display: inline; white-space: nowrap; width: 15%">
+                        <input type="text" name="ppy" placeholder="y" id="ppy"
+                               style="display: inline; white-space: nowrap; width: 15%">
+                        <input type="text" name="ppz" placeholder="z" id="ppz"
+                               style="display: inline; white-space: nowrap; width: 15%">
+                        <!--Type must be button, not submit. Otherwise, the page would be refreshed every time.-->
+                        <input class="button-primary" type="button" value="Set" id="ppsubmit">
+                    </fieldset>
+                </form>
+            </div>
+            <div class="column column-50" id="transformator" style="display:none">
+                <label>Eruption flow transformation: <span id="trafovalue">0</span>
+                </label>
+                <div class="slidecontainer">
+                    <input type="range" min="-1000" max="1000" value="0" class="slider" id="traforange"/>
                 </div>
-                <div class="column column-50" id="transformator" style="display:none">
-                    <label>Eruption flow transformation: <span id="trafovalue">0</span>
-</label>
-                    <div class="slidecontainer">
-                        <input type="range" min="-1000" max="1000" value="0" class="slider" id="traforange"/>
-                    </div>
-                </div>
-            </section>
+            </div>
+        </section>
     </section>
     </body>
     <script type="text/javascript" src="//d3js.org/d3.v5.min.js"></script>
     <script type="text/javascript">
-        //
-
         // sensible values are "addPoints", "addLines" and "standard"
         var program_mode = "addPoints";
 
+        // The number of flags that are currently depicted.
         var n = 0;
 
+        // Two-dimensional projections of...
+        // ... the points of the flags,
         var ps_2dim = [];
+        // ... the lines of the flags (simply defined by another point (except for ps_2dim[i])
+        // that is lying on the line,
         var ds_2dim = [];
+        // ... the intersection points of the lines,
         var qs_2dim = [];
+        // ... the points defining the inner triangles (for the eruption flow).
         var us_2dim = [];
 
+        // This three-dimensional vector defines the projection plane to which the
+        // projective points and lines are projected for visualization.
         var proj_plane = [0, 0, 1];
 
+        // The transformation parameter, ranging from -1000 to +1000.
         var t = 0;
+        // The same as a string.
         var t_str = "0";
 
+        // Data for the transformations of the flag tuple. After initialization, it contains
+        // values for ps_2dim[t], qs_2dim[t] and us_2dim[t] for each transformation parameter t.
         var trafo_data;
 
+        // Width and height of the SVG object.
         var width = Math.min(2000, document.getElementById("canvas01").offsetWidth - 100),
             height = Math.min(2000, innerHeight - 200);
 
+        // SVG object for data visualization, using D3.js
         var svg = d3.select("#canvas01").append("svg")
             .attr("width", width)
             .attr("height", height)
             .style("background-color", "#DDDDDD");
-        svg.on("mousemove", mouseMovePointOrLine)
-            .on("click", mouseClickPointOrLine);
+        svg.on("mousemove", mouse_move_point_or_line)
+            .on("click", mouse_click_point_or_line);
 
-        var fixedCoordinates = [0, 0];
+        // Current coordinates of the mouse (if hovering over the SVG).
         var liveCoordinates = [0, 0];
+        // Saved coordinates of the last mouse click (on the SVG).
+        var fixedCoordinates = [0, 0];
+
 
         /**
          * Listeners for buttons and sliders.
@@ -164,14 +180,14 @@
         // The "Add flag" button
         $(document).ready(function () {
             $("#add_flag_buttonb").click(function () {
-                submitFlagsButton();
+                submit_flags_button();
             });
         });
 
         // The "Submit projection plane" button
         $(document).ready(function () {
             $("#ppsubmit").click(function () {
-                submitProjectionPlane();
+                submit_projection_plane_button();
             });
         });
 
@@ -184,19 +200,20 @@
             t = this.value;
             t_str = t.toString();
             //console.log(trafo_data);
+            // Update the current coordinates of the ps, qs and us.
             ps_2dim = trafo_data[t_str]["ps"];
             qs_2dim = trafo_data[t_str]["qs"];
             us_2dim = trafo_data[t_str]["us"];
-            refreshCanvas();
+            refresh_svg();
         };
 
         // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
-        $('input[name=withInner]').change(function(){
-            if($(this).is(':checked')) {
+        $('input[name=withInner]').change(function () {
+            if ($(this).is(':checked')) {
                 //console.log(us_2dim);
                 //console.log(ps_2dim);
-                drawPoints(us_2dim, "u_point", "#8b31ca")
-                drawTriangle(us_2dim, "u_line", "#8b31ca");
+                draw_points(us_2dim, "u_point", "#8b31ca")
+                draw_triangle(us_2dim, "u_line", "#8b31ca");
             } else {
                 svg.selectAll("#u_point").remove();
                 svg.selectAll("#u_line").remove();
@@ -204,10 +221,10 @@
         });
 
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
-        $('input[name=withMiddle]').change(function(){
-            if($(this).is(':checked')) {
-                drawPoints(ps_2dim, "p_point", "#3ecabd")
-                drawTriangle(ps_2dim, "p_line", "#3ecabd");
+        $('input[name=withMiddle]').change(function () {
+            if ($(this).is(':checked')) {
+                draw_points(ps_2dim, "p_point", "#3ecabd")
+                draw_triangle(ps_2dim, "p_line", "#3ecabd");
             } else {
                 svg.selectAll("#p_point").remove();
                 svg.selectAll("#p_line").remove();
@@ -215,9 +232,9 @@
         });
 
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
-        $('input[name=withHelper]').change(function(){
-            if($(this).is(':checked')) {
-                drawHelperLines(ps_2dim, qs_2dim, "helper_line", "#efefef")
+        $('input[name=withHelper]').change(function () {
+            if ($(this).is(':checked')) {
+                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", "#efefef")
             } else {
                 svg.selectAll("#helper_line").remove();
             }
