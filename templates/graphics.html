@@ -143,9 +143,15 @@
         // ... the points defining the inner triangles (for the eruption flow).
         var us_2dim = [];
 
+        // Current coordinates of the mouse (if hovering over the SVG).
+        var liveCoordinates = [0, 0];
+        // Saved coordinates of the last mouse click (on the SVG).
+        var fixedCoordinates = [0, 0];
+
         // This three-dimensional vector defines the projection plane to which the
         // projective points and lines are projected for visualization.
         var proj_plane = [0, 0, 1];
+        var old_proj_plane = [0, 0, 1];
 
         // The transformation parameter, ranging from -1000 to +1000.
         var t = 0;
@@ -168,10 +174,12 @@
         svg.on("mousemove", mouse_move_point_or_line)
             .on("click", mouse_click_point_or_line);
 
-        // Current coordinates of the mouse (if hovering over the SVG).
-        var liveCoordinates = [0, 0];
-        // Saved coordinates of the last mouse click (on the SVG).
-        var fixedCoordinates = [0, 0];
+        // Layer
+        var background_layer = svg.append('g');
+        var flag_layer = svg.append('g');
+        var triangle_layer = svg.append('g');
+
+
 
 
         /**
@@ -204,7 +212,7 @@
             ps_2dim = trafo_data[t_str]["ps"];
             qs_2dim = trafo_data[t_str]["qs"];
             us_2dim = trafo_data[t_str]["us"];
-            refresh_svg();
+            refresh_svg(false);
         };
 
         // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
@@ -212,8 +220,8 @@
             if ($(this).is(':checked')) {
                 //console.log(us_2dim);
                 //console.log(ps_2dim);
-                draw_points(us_2dim, "u_point", "#8b31ca")
-                draw_triangle(us_2dim, "u_line", "#8b31ca");
+                draw_points(us_2dim, "u_point", "#8b31ca", triangle_layer);
+                draw_triangle(us_2dim, "u_line", "#8b31ca", triangle_layer);
             } else {
                 svg.selectAll("#u_point").remove();
                 svg.selectAll("#u_line").remove();
@@ -223,8 +231,8 @@
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
         $('input[name=withMiddle]').change(function () {
             if ($(this).is(':checked')) {
-                draw_points(ps_2dim, "p_point", "#3ecabd")
-                draw_triangle(ps_2dim, "p_line", "#3ecabd");
+                draw_points(ps_2dim, "p_point", "#3ecabd", triangle_layer);
+                draw_triangle(ps_2dim, "p_line", "#3ecabd", triangle_layer);
             } else {
                 svg.selectAll("#p_point").remove();
                 svg.selectAll("#p_line").remove();
@@ -234,7 +242,7 @@
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
         $('input[name=withHelper]').change(function () {
             if ($(this).is(':checked')) {
-                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", "#efefef")
+                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", "#efefef", background_layer)
             } else {
                 svg.selectAll("#helper_line").remove();
             }

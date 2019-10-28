@@ -1,15 +1,25 @@
 /*
  * Fixed variables
  */
-var new_object_color = '#007979';
+/**
+ * @type {string} The color of a new geometric object hovering before being added.
+ */
+NEW_OBJECT_COLOR = '#007979';
 
 /*
  * Functions handling interactive site elements.
  */
+/**
+ * Function handling the "Submit flags" button. If the site was in the "addPoints" or "addLines" mode,
+ * it sends the new flags to the server using the submit_flags_to_server() function.
+ *
+ * If the site was in the "standard" mode before, it switches to "addPoints" modes and enables
+ * the user to hover new points over the canvas.
+ */
 function submit_flags_button() {
     if (program_mode == "addPoints" || program_mode == "addLines") {
         console.info("Submitting flags to server!")
-        submit_flags_to_server();
+        submit_flags_to_server(false);
     } else if (program_mode == "standard") {
         console.info("Switching to the 'Add flag' mode!");
         program_mode = "addPoints";
@@ -20,17 +30,27 @@ function submit_flags_button() {
     }
 }
 
+/**
+ * If the site is in the "addPoints" or "addLines" mode, a new point resp. line hovers over the canvas
+ * whereever the mouse is.
+ */
 function mouse_move_point_or_line() {
     liveCoordinates = d3.mouse(this);
 
     if (program_mode == "addPoints") {
         //TODO: Change this to drawPoints, we don't need the extra function.
-        draw_points([liveCoordinates], "newpoint", new_object_color);
+        draw_points([liveCoordinates], "newpoint", NEW_OBJECT_COLOR, flag_layer);
     } else if (program_mode == "addLines") {
-        draw_infinite_line(fixedCoordinates, liveCoordinates);
+        draw_infinite_lines([fixedCoordinates], [liveCoordinates], "newline", NEW_OBJECT_COLOR, flag_layer);
     }
 }
 
+/**
+ * If the site is in the "addPoints" or "addLines" mode, the hovering point resp. line will be fixed
+ * in place whenever the user clicks.
+ *
+ * Furthermore, it switches mode to "addLines" resp. "addPoints" to enable adding further objects.
+ */
 function mouse_click_point_or_line() {
     if (program_mode == "addPoints") {
         program_mode = "addLines";
@@ -56,20 +76,40 @@ function mouse_click_point_or_line() {
     fixedCoordinates = d3.mouse(this);
 }
 
+/**
+ * Function handling the "Submit projection plane" button. It reads the entered values from the
+ * projection plane form. It then sends the flags and the new projection plane value to the server
+ * using the submit_flags_to_server() function.
+ */
 function submit_projection_plane_button() {
-    proj_plane = [parseFloat($("#ppx").val()),
-        parseFloat($("#ppy").val()),
-        parseFloat($("#ppz").val())];
-    submit_flags_to_server();
-    refresh_svg();
-    document.getElementById("pplane-value").innerHTML = "(" + proj_plane[0] + ", " + proj_plane[1] + ", " + proj_plane[2] + ")";
+    var x = parseFloat($("#ppx").val());
+    var y = parseFloat($("#ppy").val());
+    var z = parseFloat($("#ppz").val());
+
+    // Verifying whether the inputs are actual numbers.
+    if(isNaN(x)||isNaN(y)||isNaN(z)){
+        alert("One of the projection plane inputs is not a proper number!")
+    } else {
+        old_proj_plane = proj_plane;
+        proj_plane = [x, y, z];
+        submit_flags_to_server(true);
+        document.getElementById("pplane-value").innerHTML = "(" + proj_plane[0] + ", " + proj_plane[1] + ", " + proj_plane[2] + ")";
+    }
 }
 
 /*
  * Functions for interaction with the server.
  */
-
-function submit_flags_to_server() {
+/**
+ * This function submits all the flag data to the server and receives transformation data (as well
+ * as updated points, if the projection plane was changed) from the server.
+ *
+ * During the calculation time of the server, all interactive elements of the site are hidden, in
+ * order to prevent changes from the user.
+ */
+function submit_flags_to_server(with_refresh) {
+    t = 0;
+    t_str = "0";
     hide_editing_elements();
     show_loader();
     document.getElementById('hint-type').style.display = "none";
@@ -109,6 +149,9 @@ function submit_flags_to_server() {
             document.getElementById('hint-type').style.display = "inline";
             document.getElementById('mode-description').innerHTML =
                 "Move slider to transform.";
+            if(with_refresh){
+                refresh_svg();
+            }
         });
 }
 
@@ -116,76 +159,71 @@ function submit_flags_to_server() {
  * Functions for interaction with the SVG object.
  */
 
+/**
+ * This functions updates all the SVG elements coordinates, e.g. after a transformation has been applied.
+ */
 function refresh_svg() {
-    update_points(ps_2dim, "#point");
-    update_points(us_2dim, "#u_point");
-    update_points(ps_2dim, "#p_point")
-    update_triangle(us_2dim, "#u_line");
-    update_triangle(ps_2dim, "#p_line");
-    update_helper_lines(ps_2dim, qs_2dim, "#helper_line")
-
-    var line_data = [];
-
-    for (var i = 0; i < n; i++) {
-        var intersectionPoints = get_intersection_with_frame(ps_2dim[i], ds_2dim[i]);
-        line_data.push({
-            "x1": intersectionPoints[0][0], "y1": intersectionPoints[0][1],
-            "x2": intersectionPoints[1][0], "y2": intersectionPoints[1][1]
-        });
-
-    }
-
-    svg.selectAll("#line")
-        .data(line_data)
-        .attr("x1", function (d) {
-            return d["x1"];
-        })
-        .attr("y1", function (d) {
-            return d["y1"];
-        })
-        .attr("x2", function (d) {
-            return d["x2"];
-        })
-        .attr("y2", function (d) {
-            return d["y2"];
-        })
+    update_points(ps_2dim, "point");
+    update_points(us_2dim, "u_point");
+    update_points(ps_2dim, "p_point");
+    update_triangle(us_2dim, "u_line");
+    update_triangle(ps_2dim, "p_line");
+    update_helper_lines(ps_2dim, qs_2dim, "helper_line");
+    update_infinite_lines(ps_2dim, ds_2dim, "line");
 }
 
-function draw_infinite_line(fixedCoordinates, liveCoordinates) {
-    var intersectionPoints = get_intersection_with_frame(fixedCoordinates, liveCoordinates);
-    data = [{
-        "x1": intersectionPoints[0][0], "y1": intersectionPoints[0][1],
-        "x2": intersectionPoints[1][0], "y2": intersectionPoints[1][1]
-    }];
+/**
+ * Draws infinite lines through points data0[i] and data1[i] for all i. An infinite line not only
+ * connects the two points, but stretches over the whole canvas.
+ *
+ * @param data0: an array of 2-dim arrays (point coordinates)
+ * @param data1: another array of 2-dim arrays (point coordinates)
+ * @param id: an id string for identifying the lines later
+ * @param color: a color string specifying the object's color
+ */
+function draw_infinite_lines(data0, data1, id, color, layer) {
+    // We will not draw the line between point0 and point1
+    // as it will not appear infinitely long. Instead, we will calculate the line's
+    // intersection points with the boundary of the canvas. Then, the line will appear "infinitely" long.
+    data = [];
+    for (var i = 0; i < data0.length; i++) {
+        data.push(get_intersection_with_frame(data0[i], data1[i]));
+    }
 
-    var line = svg.selectAll("#newline")
+    var line = layer.selectAll("#" + id)
         .data(data);
 
     line.exit().remove();
 
     line.enter().append("line")
-        .attr("id", "newline")
+        .attr("id", id)
         .merge(line)
-        .style('stroke', '#007979')
+        .style('stroke', color)
         .attr("x1", function (d) {
-            return d.x1;
+            return d[0][0];
         })
         .attr("y1", function (d) {
-            return d.y1;
+            return d[0][1];
         })
         .attr("x2", function (d) {
-            return d.x2;
+            return d[1][0];
         })
         .attr("y2", function (d) {
-            return d.y2;
+            return d[1][1];
         });
-
 
     d3.event.preventDefault();
 }
 
-function draw_points(data, id, color) {
-    var circle = svg.selectAll("#"+id)
+/**
+ * draws little circles at all the points specified in data
+ *
+ * @param data: an array of 2-dim arrays
+ * @param id: an id string for identifying the points later
+ * @param color: a color string specifying the object's color
+ */
+function draw_points(data, id, color, layer) {
+    var circle = layer.selectAll("#" + id)
         .data(data);
     circle.exit().remove();
 
@@ -203,9 +241,16 @@ function draw_points(data, id, color) {
         });
 }
 
-function draw_triangle(data, id, color) {
+/**
+ * draws lines connecting the three corners of the triangle specified in data
+ *
+ * @param data: a 3-dim array of 2-dim arrays
+ * @param id: an id string for identifying the triangle's lines later
+ * @param color: a color string specifying the object's color
+ */
+function draw_triangle(data, id, color, layer) {
     for (var i = 0; data.length - 1; i++) {
-        svg.append("line")
+        layer.append("line")
             .attr("id", id)
             .style('stroke', color)
             .attr("x1", data[i][0])
@@ -215,9 +260,16 @@ function draw_triangle(data, id, color) {
     }
 }
 
-function draw_helper_lines(data_middle, data_outer, id, color) {
+/**
+ * draws helper lines between the points in the middle triangle and in the outer triangle
+ *
+ * @param data: a 3-dim array of 2-dim arrays
+ * @param id: an id string for identifying the lines later
+ * @param color: a color string specifying the object's color
+ */
+function draw_helper_lines(data_middle, data_outer, id, color, layer) {
     for (var i = 0; data_middle.length - 1; i++) {
-        svg.append("line")
+        layer.append("line")
             .attr("id", id)
             .style('stroke', color)
             .attr("x1", data_middle[i][0])
@@ -227,9 +279,42 @@ function draw_helper_lines(data_middle, data_outer, id, color) {
     }
 }
 
+/**
+ * updates the objects coordinates
+ * @param data0
+ * @param data1
+ * @param id
+ */
+function update_infinite_lines(data0, data1, id) {
+    data = [];
+    for (var i = 0; i < data0.length; i++) {
+        data.push(get_intersection_with_frame(data0[i], data1[i]));
+    }
+
+    svg.selectAll("#"+id)
+        .data(data)
+        .attr("x1", function (d) {
+            return d[0][0];
+        })
+        .attr("y1", function (d) {
+            return d[0][1];
+        })
+        .attr("x2", function (d) {
+            return d[1][0];
+        })
+        .attr("y2", function (d) {
+            return d[1][1];
+        });
+}
+
+/**
+ * updates the objects coordinates
+ * @param data
+ * @param id
+ */
 function update_triangle(data, id) {
     var index = [0, 1, 2];
-    svg.selectAll(id)
+    svg.selectAll("#"+id)
         .data(index)
         .attr("x1", function (i) {
             return data[i][0];
@@ -245,8 +330,13 @@ function update_triangle(data, id) {
         });
 }
 
+/**
+ * updates the objects coordinates
+ * @param data
+ * @param id
+ */
 function update_points(data, id) {
-    svg.selectAll(id)
+    svg.selectAll("#"+id)
         .data(data)
         .attr("cx", function (d) {
             return d[0];
@@ -256,9 +346,15 @@ function update_points(data, id) {
         });
 }
 
+/**
+ * updates the objects coordinates
+ * @param middle_data
+ * @param outer_data
+ * @param id
+ */
 function update_helper_lines(middle_data, outer_data, id) {
     var index = [0, 1, 2];
-    svg.selectAll(id)
+    svg.selectAll("#"+id)
         .data(index)
         .attr("x1", function (i) {
             return middle_data[i][0];
@@ -277,7 +373,9 @@ function update_helper_lines(middle_data, outer_data, id) {
 /*
  * Functions for altering the user interface.
  */
-
+/**
+ * hides interactive sliders and buttons
+ */
 function hide_editing_elements() {
     document.getElementById('add_flag_buttonb').style.display = "none";
     document.getElementById('checkboxes-triangle').style.display = "none";
@@ -285,10 +383,16 @@ function hide_editing_elements() {
     document.getElementById('proj-plane-form').style.display = "none";
 }
 
+/**
+ * hides the little loading circle
+ */
 function hide_loader() {
     document.getElementById('loader-flags').style.display = "none";
 }
 
+/**
+ * displays interactive sliders and buttons
+ */
 function show_editing_elements() {
     document.getElementById('add_flag_buttonb').style.display = "block";
     document.getElementById('checkboxes-triangle').style.display = "block";
@@ -296,6 +400,9 @@ function show_editing_elements() {
     document.getElementById('proj-plane-form').style.display = "inline";
 }
 
+/**
+ * displays the loading circle (during loading data from the server)
+ */
 function show_loader() {
     document.getElementById('loader-flags').style.display = "block";
 }
@@ -303,12 +410,20 @@ function show_loader() {
 /*
  * Geometric helper functions.
  */
-function get_intersection_with_frame(point1, point2) {
+/**
+ * For a line passing through the points point0 and point1, this functions calculates its intersection
+ * points with the frame of the canvas.
+ *
+ * @param point0: a 2-dim array
+ * @param point1: a 2-dim array
+ * @returns {[]}: an array of two 2-dim arrays
+ */
+function get_intersection_with_frame(point0, point1) {
     var output = [];
 
-    if (point1[0] - point2[0] != Infinity) {
-        var a = (point1[1] - point2[1]) / (point1[0] - point2[0]);
-        var b = point1[1] - a * point1[0];
+    if (point0[0] - point1[0] !== Infinity) {
+        var a = (point0[1] - point1[1]) / (point0[0] - point1[0]);
+        var b = point0[1] - a * point0[0];
         // The following points are the possible intersection
         // points of the line a*x+b with the image frame lines.
         var intersection_points = [];
