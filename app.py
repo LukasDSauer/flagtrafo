@@ -1,9 +1,9 @@
-import sys
-sys.path.append('services/flagcomplex/')
+#import sys
+#sys.path.append('services/flagcomplex/')
 
 from flask import Flask, render_template, request, jsonify
-from flask_json import FlaskJSON, JsonError, json_response, as_json
-from FlagComplex import FlagComplex
+from flask_json import FlaskJSON #, JsonError, json_response, as_json
+from flagcomplex import FlagComplex
 from EuklGeometryUtility import rotate_vectors
 import numpy as np
 
@@ -34,14 +34,15 @@ def get_transformation_data():
     data = request.get_json()
     #print("ALL THE DATA!")
     #print(data)
-    pplane = request.get_json()["pplane"]
+    pplane = data["pplane"]
+    old_pplane = data["oldpplane"]
     app.logger.info("Setting the projection plane to be " + str(pplane) + ".")
     fcomplex.set_projection_plane(np.array(pplane))
     # The number of flags
     n = len(data['ps'])
     # Adding all flags to the flag complex object
     app.logger.info("Adding " + str(n) + " flags to the python flag complex object.")
-    if pplane == [0, 0, 1]:
+    if old_pplane == [0, 0, 1]:
         for i in range(n):
             p = data['ps'][i]
             p.append(100.0)
@@ -54,7 +55,7 @@ def get_transformation_data():
             p.append(100.0)
             direction = data['ds'][i]
             direction.append(100.0)
-            rotation_matrix = rotate_vectors(np.array(pplane), np.array([0, 0, 1]))
+            rotation_matrix = rotate_vectors(np.array([0, 0, 1]), np.array(old_pplane))
             p = np.matmul(rotation_matrix, p)
             direction = np.matmul(rotation_matrix, direction)
 
@@ -77,7 +78,6 @@ def get_transformation_data():
         drawus = [(fcomplex.get_two_dimensional_point(x) * 100).tolist() for x in us]
         data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
     app.logger.info("Data successfully computed!")
-    app.logger.info(data)
     return jsonify(data)
 
 #@app.before_request

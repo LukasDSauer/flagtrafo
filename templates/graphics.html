@@ -8,59 +8,6 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="{{ url_for('static',filename='scripts/graphics.js') }}"></script>
 </head>
-<style>
-
-    body {
-        margin: 0;
-        background: #ffffff;
-        min-width: 960px;
-    }
-
-    line {
-        stroke: #393939;
-        stroke-width: 1.5px;
-    }
-
-    circle {
-        fill: #393939;
-        stroke: #333333;
-        stroke-width: 2.5px;
-    }
-
-    .slider {
-        -webkit-appearance: none;
-        width: 50%;
-        height: 10px;
-        border-radius: 5px;
-        background: #DDDDDD;
-        outline: none;
-        opacity: 1.0;
-        -webkit-transition: .2s;
-        transition: opacity .2s;
-    }
-
-    .slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 15px;
-        height: 15px;
-        border-radius: 100%;
-        background: #9b4dca;
-        border-color: #9b4dca;
-        cursor: pointer;
-    }
-
-    .slider::-moz-range-thumb {
-        width: 15px;
-        height: 15px;
-        border-radius: 100%;
-        background: #9b4dca;
-        border-color: #9b4dca;
-
-        cursor: pointer;
-    }
-
-</style>
 <body>
 {% extends "template.html" %}
 {% block content %}
@@ -93,6 +40,15 @@
                         Helper Lines
                     </label>
                 </div>
+                <div style="display:none" id="div-select-trafo">
+                <label>Trafo type
+                 <select>
+                  <option value="erupt-flow">Eruption flow</option>
+                  <option value="bulge-flow">Bulge flow</option>
+                  <option value="shear-flow">Shear flow</option>
+                </select>
+                    </label>
+                    </div>
             </div>
             <div class="column column-80" id="canvas01"></div>
         </div>
@@ -115,7 +71,7 @@
                 </form>
             </div>
             <div class="column column-50" id="transformator" style="display:none">
-                <label>Eruption flow transformation: <span id="trafovalue">0</span>
+                <label>Transformation value: <span id="trafovalue">0</span>
                 </label>
                 <div class="slidecontainer">
                     <input type="range" min="-1000" max="1000" value="0" class="slider" id="traforange"/>
@@ -126,6 +82,17 @@
     </body>
     <script type="text/javascript" src="//d3js.org/d3.v5.min.js"></script>
     <script type="text/javascript">
+        /*
+         * Fixed variables
+         */
+        var style = window.getComputedStyle(document.body);
+        /**
+         * @type {string} The color of a new geometric object hovering before being added.
+         */
+        NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
+        FLAVOR_COLOR_1 = style.getPropertyValue('--flavor-color-1');
+        FLAVOR_COLOR_2 = style.getPropertyValue('--flavor-color-2');
+        FLAVOR_COLOR_3 = style.getPropertyValue('--flavor-color-3');
         // sensible values are "addPoints", "addLines" and "standard"
         var program_mode = "addPoints";
 
@@ -179,9 +146,6 @@
         var flag_layer = svg.append('g');
         var triangle_layer = svg.append('g');
 
-
-
-
         /**
          * Listeners for buttons and sliders.
          */
@@ -220,8 +184,8 @@
             if ($(this).is(':checked')) {
                 //console.log(us_2dim);
                 //console.log(ps_2dim);
-                draw_points(us_2dim, "u_point", "#8b31ca", triangle_layer);
-                draw_triangle(us_2dim, "u_line", "#8b31ca", triangle_layer);
+                draw_points(us_2dim, "u_point", FLAVOR_COLOR_1, triangle_layer);
+                draw_triangle(us_2dim, "u_line", FLAVOR_COLOR_1, triangle_layer);
             } else {
                 svg.selectAll("#u_point").remove();
                 svg.selectAll("#u_line").remove();
@@ -231,8 +195,8 @@
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
         $('input[name=withMiddle]').change(function () {
             if ($(this).is(':checked')) {
-                draw_points(ps_2dim, "p_point", "#3ecabd", triangle_layer);
-                draw_triangle(ps_2dim, "p_line", "#3ecabd", triangle_layer);
+                draw_points(ps_2dim, "p_point", FLAVOR_COLOR_2, triangle_layer);
+                draw_triangle(ps_2dim, "p_line", FLAVOR_COLOR_2, triangle_layer);
             } else {
                 svg.selectAll("#p_point").remove();
                 svg.selectAll("#p_line").remove();
@@ -242,7 +206,7 @@
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
         $('input[name=withHelper]').change(function () {
             if ($(this).is(':checked')) {
-                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", "#efefef", background_layer)
+                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", FLAVOR_COLOR_3, background_layer)
             } else {
                 svg.selectAll("#helper_line").remove();
             }

@@ -1,3 +1,15 @@
+:root {
+    --main-highlight-color: #4981c0;/*#9b4dca;*/
+    --main-hoverbackground-color: #395381;/*var(--main-hoverbackground-color, grey);*/
+    --main-text-color: #6a6a6a;/*var(--main-hoverbackground-color, grey);*/
+    --dark-text-color: #444345;
+
+    --new-highlight-color: #ff69b4;/*'#007979'*/
+    --flavor-color-1: #81c042;
+    --flavor-color-2: #ffda03;
+    --flavor-color-3: #efefef;
+}
+
 .container {
     max-width: 80.0rem;
     padding-bottom: 7.5rem;
@@ -28,7 +40,7 @@
 /* Style the links inside the navigation bar */
 .topnav a {
     float: left;
-    color: #606c76;
+    color: var(--dark-text-color, grey);
     text-align: center;
     padding: 14px 16px;
     text-decoration: none;
@@ -37,19 +49,19 @@
 
 /* Change the color of links on hover */
 .topnav a:hover {
-    background-color: #606c76;
+    background-color: var(--main-hoverbackground-color, grey);
     color: white;
 }
 
 /* Add a color to the active/current link */
 .topnav a.active {
-    background-color: #9b4dca;
+    background-color: var(--main-highlight-color, black);
     color: white;
 }
 
 .loader {
     border: 8px solid #f3f3f3; /* Light grey */
-    border-top: 8px solid #9b4dca;
+    border-top: 8px solid var(--main-highlight-color, black);
     border-radius: 50%;
     position: relative;
     left: 25%;
@@ -66,3 +78,53 @@
         transform: rotate(360deg);
     }
 }
+
+    body {
+        margin: 0;
+        background: #ffffff;
+        min-width: 960px;
+    }
+
+    line {
+        stroke: #393939;
+        stroke-width: 1.5px;
+    }
+
+    circle {
+        fill: #393939;
+        stroke: #333333;
+        stroke-width: 2.5px;
+    }
+
+    .slider {
+        -webkit-appearance: none;
+        width: 50%;
+        height: 10px;
+        border-radius: 5px;
+        background: #DDDDDD;
+        outline: none;
+        opacity: 1.0;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        border-radius: 100%;
+        background: var(--main-highlight-color, black);
+        border-color: var(--main-highlight-color, black);
+        cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+        width: 15px;
+        height: 15px;
+        border-radius: 100%;
+        background: var(--main-highlight-color, black);
+        border-color: var(--main-highlight-color, black);
+
+        cursor: pointer;
+    }

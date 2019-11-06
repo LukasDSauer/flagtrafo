@@ -1,12 +1,4 @@
 /*
- * Fixed variables
- */
-/**
- * @type {string} The color of a new geometric object hovering before being added.
- */
-NEW_OBJECT_COLOR = '#007979';
-
-/*
  * Functions handling interactive site elements.
  */
 /**
@@ -39,9 +31,9 @@ function mouse_move_point_or_line() {
 
     if (program_mode == "addPoints") {
         //TODO: Change this to drawPoints, we don't need the extra function.
-        draw_points([liveCoordinates], "newpoint", NEW_OBJECT_COLOR, flag_layer);
+        draw_points([liveCoordinates], "newpoint", NEW_HIGHLIGHT_COLOR, flag_layer);
     } else if (program_mode == "addLines") {
-        draw_infinite_lines([fixedCoordinates], [liveCoordinates], "newline", NEW_OBJECT_COLOR, flag_layer);
+        draw_infinite_lines([fixedCoordinates], [liveCoordinates], "newline", NEW_HIGHLIGHT_COLOR, flag_layer);
     }
 }
 
@@ -122,7 +114,8 @@ function submit_flags_to_server(with_refresh) {
     var data = {
         "ps": ps_2dim,
         "ds": ds_2dim,
-        "pplane": proj_plane
+        "pplane": proj_plane,
+        "oldpplane": old_proj_plane
     };
     data = JSON.stringify(data);
     console.log(data);
@@ -136,7 +129,6 @@ function submit_flags_to_server(with_refresh) {
     })
         .done(function (data) {
             console.info("All the transformation data received!")
-            console.log(data);
             trafo_data = data;
             ps_2dim = trafo_data[t_str]["ps"];
             qs_2dim = trafo_data[t_str]["qs"];
@@ -381,6 +373,7 @@ function hide_editing_elements() {
     document.getElementById('checkboxes-triangle').style.display = "none";
     document.getElementById('transformator').style.display = "none";
     document.getElementById('proj-plane-form').style.display = "none";
+    document.getElementById('div-select-trafo').style.display = "none";
 }
 
 /**
@@ -397,6 +390,7 @@ function show_editing_elements() {
     document.getElementById('add_flag_buttonb').style.display = "block";
     document.getElementById('checkboxes-triangle').style.display = "block";
     document.getElementById('transformator').style.display = "block";
+    document.getElementById('div-select-trafo').style.display = "block";
     document.getElementById('proj-plane-form').style.display = "inline";
 }
 
