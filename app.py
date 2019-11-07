@@ -1,10 +1,10 @@
-#import sys
-#sys.path.append('services/flagcomplex/')
+import sys
+sys.path.append('../flagcomplex/')
 
 from flask import Flask, render_template, request, jsonify
 from flask_json import FlaskJSON #, JsonError, json_response, as_json
 from flagcomplex import FlagComplex
-from EuklGeometryUtility import rotate_vectors
+from flagcomplex.EuklGeometryUtility import rotate_vectors
 import numpy as np
 
 app = Flask(__name__)
