@@ -1,0 +1,3 @@
+Flask==1.1.1
+Flask-JSON==0.3.3
+flagcomplex
