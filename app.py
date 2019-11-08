@@ -78,7 +78,7 @@ def get_transformation_data():
         drawus = [(fcomplex.get_two_dimensional_point(x) * 100).tolist() for x in us]
         data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
     app.logger.info("Data successfully computed!")
-    return jsonify(*data)
+    return jsonify(data)
 
 #@app.before_request
 #def log_request_info():
