@@ -23,10 +23,10 @@
                         <input class="button-primary" type="button"
                                id="add_flag_buttonb"
                                value="Finish" style="display:block">
-                        <div class="loader" style="display:none" id="loader-flags"></div>
+                        <div class="loader" style="display:none" id="loader:flags"></div>
                     </fieldset>
                 </form>
-                <div style="display:none" id="checkboxes-triangle">
+                <div style="display:none" id="checks:triangle">
                     <label>
                         <input type="checkbox" name="withInner" autocomplete="off"/>
                         Inner triangle
@@ -41,14 +41,14 @@
                     </label>
                 </div>
                 <div style="display:none" id="div-select-trafo">
-                <label>Trafo type
-                 <select>
-                  <option value="erupt-flow">Eruption flow</option>
-                  <option value="bulge-flow">Bulge flow</option>
-                  <option value="shear-flow">Shear flow</option>
-                </select>
+                    <label>Trafo type
+                        <select>
+                            <option id="opt:trafo-erupt" value="erupt-flow" style="display:none">Eruption flow</option>
+                            <option id="opt:trafo-bulge" value="bulge-flow" style="display:none">Bulge flow</option>
+                            <option id = "opt:trafo-shear" value="shear-flow" style="display:none">Shear flow</option>
+                        </select>
                     </label>
-                    </div>
+                </div>
             </div>
             <div class="column column-80" id="canvas01"></div>
         </div>
@@ -86,13 +86,26 @@
          * Fixed variables
          */
         var style = window.getComputedStyle(document.body);
+
+        var n_submit = [3];
+
+        var n_max = 10;
+
+        var ui_elements =
+            {
+                "all_elements": ['add_flag_buttonb', 'checks:triangle', 'transformator',
+                    'div-select-trafo', 'proj-plane-form', 'opt:trafo-erupt'],
+                "show_for_all_n": ['add_flag_buttonb'],
+                "3":
+                    ['checks:triangle', 'transformator', 'div-select-trafo', 'proj-plane-form', 'opt:trafo-erupt']
+            };
         /**
          * @type {string} The color of a new geometric object hovering before being added.
          */
-        NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
-        FLAVOR_COLOR_1 = style.getPropertyValue('--flavor-color-1');
-        FLAVOR_COLOR_2 = style.getPropertyValue('--flavor-color-2');
-        FLAVOR_COLOR_3 = style.getPropertyValue('--flavor-color-3');
+        var NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
+        var FLAVOR_COLOR_1 = style.getPropertyValue('--flavor-color-1');
+        var FLAVOR_COLOR_2 = style.getPropertyValue('--flavor-color-2');
+        var FLAVOR_COLOR_3 = style.getPropertyValue('--flavor-color-3');
         // sensible values are "addPoints", "addLines" and "standard"
         var program_mode = "addPoints";
 
