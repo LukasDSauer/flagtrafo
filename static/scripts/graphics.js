@@ -8,15 +8,52 @@
  * If the site was in the "standard" mode before, it switches to "addPoints" modes and enables
  * the user to hover new points over the canvas.
  */
-function submit_flags_button() {
-    if (program_mode == "addPoints" || program_mode == "addLines") {
-        console.info("Submitting flags to server!")
-        submit_flags_to_server(false);
-    } else if (program_mode == "standard") {
-        console.info("Switching to the 'Add flag' mode!");
-        program_mode = "addPoints";
+function switch_program_mode_to(mode) {
+    if (mode === "standard") {
+        program_mode = "standard";
+        document.getElementById('add_flag_buttonb').value = "Add flags";
+        show_editing_elements();
+        if (Object.keys(ui_elements).includes(n.toString())) {
+            // Numbers with special transformations get the following hint:
+            document.getElementById('hint-type').style.display = "inline";
+            document.getElementById('mode-description').innerHTML =
+                "Move slider to transform.";
+        }
+    }
+    if (mode === "addFlags") {
+        svg.selectAll("#u_point").remove();
+        svg.selectAll("#u_line").remove();
+        svg.selectAll("#p_point").remove();
+        svg.selectAll("#p_line").remove();
+        svg.selectAll("#helper_line").remove();
         hide_editing_elements();
+        document.getElementById("add_flag_buttonb").style.display = "block";
         document.getElementById('add_flag_buttonb').value = "Finish";
+        switch_program_mode_to("addPoints");
+    }
+    if (mode === "addPoints") {
+        program_mode = "addPoints";
+        document.getElementById('mode-description').innerHTML = "Click to add point. " +
+            "Click 'finish' to finish adding more flags.";
+    }
+    if (mode === "addLines") {
+        program_mode = "addLines";
+        document.getElementById('mode-description').innerHTML = "Click to add line. ";
+    }
+
+}
+
+function submit_flags_button() {
+    if (program_mode === "addPoints" || program_mode === "addLines") {
+        if (n_submit.includes(n)) {
+            submit_flags_to_server(false);
+        } else {
+            svg.selectAll("#newpoint").remove();
+            svg.selectAll("#newline").remove();
+            switch_program_mode_to("standard");
+        }
+    } else if (program_mode == "standard") {
+        switch_program_mode_to("addFlags");
         svg.on("mousemove", mouse_move_point_or_line)
             .on("click", mouse_click_point_or_line);
     }
@@ -45,25 +82,28 @@ function mouse_move_point_or_line() {
  */
 function mouse_click_point_or_line() {
     if (program_mode == "addPoints") {
-        program_mode = "addLines";
-        document.getElementById('mode-description').innerHTML = "Click to add line. ";
+        switch_program_mode_to("addLines");
     } else if (program_mode == "addLines") {
-        program_mode = "addPoints";
-        document.getElementById('mode-description').innerHTML = "Click to add point. " +
-            "Click 'finish' to finish adding more flags.";
-        svg.selectAll("#newline")
+        if (n <= n_max) {
+            svg.selectAll("#newline")
             .style('stroke', '#393939')
             .attr("id", "line");
 
-        svg.selectAll("#newpoint")
-            .style('stroke', '#393939')
-            .style('fill', '#393939')
-            .attr("id", "point");
+            svg.selectAll("#newpoint")
+                .style('stroke', '#393939')
+                .style('fill', '#393939')
+                .attr("id", "point");
 
-        ps_2dim[n] = fixedCoordinates;
-        ds_2dim[n] = liveCoordinates;
-        n++;
-
+            ps_2dim[n] = fixedCoordinates;
+            ds_2dim[n] = liveCoordinates;
+            n++;
+            switch_program_mode_to("addPoints");
+        } else {
+            svg.selectAll("#newpoint").remove();
+            svg.selectAll("#newline").remove();
+            submit_flags_button();
+            alert("You can not add more than " + n_max.toString() + " flags!");
+        }
     }
     fixedCoordinates = d3.mouse(this);
 }
@@ -79,7 +119,7 @@ function submit_projection_plane_button() {
     var z = parseFloat($("#ppz").val());
 
     // Verifying whether the inputs are actual numbers.
-    if(isNaN(x)||isNaN(y)||isNaN(z)){
+    if (isNaN(x) || isNaN(y) || isNaN(z)) {
         alert("One of the projection plane inputs is not a proper number!")
     } else {
         old_proj_plane = proj_plane;
@@ -102,15 +142,13 @@ function submit_projection_plane_button() {
 function submit_flags_to_server(with_refresh) {
     t = 0;
     t_str = "0";
+
     hide_editing_elements();
     show_loader();
-    document.getElementById('hint-type').style.display = "none";
-    document.getElementById('mode-description').innerHTML = "Loading transformation data.";
 
     svg.selectAll("#newpoint").remove();
     svg.selectAll("#newline").remove();
-    document.getElementById('add_flag_buttonb').value = "Add flags";
-    program_mode = "standard";
+
     var data = {
         "ps": ps_2dim,
         "ds": ds_2dim,
@@ -136,12 +174,11 @@ function submit_flags_to_server(with_refresh) {
             // and this is all that we need.
             ds_2dim = trafo_data[t_str]["qs"];
             us_2dim = trafo_data[t_str]["us"];
+
             hide_loader();
-            show_editing_elements();
-            document.getElementById('hint-type').style.display = "inline";
-            document.getElementById('mode-description').innerHTML =
-                "Move slider to transform.";
-            if(with_refresh){
+            switch_program_mode_to("standard");
+
+            if (with_refresh) {
                 refresh_svg();
             }
         });
@@ -283,7 +320,7 @@ function update_infinite_lines(data0, data1, id) {
         data.push(get_intersection_with_frame(data0[i], data1[i]));
     }
 
-    svg.selectAll("#"+id)
+    svg.selectAll("#" + id)
         .data(data)
         .attr("x1", function (d) {
             return d[0][0];
@@ -306,7 +343,7 @@ function update_infinite_lines(data0, data1, id) {
  */
 function update_triangle(data, id) {
     var index = [0, 1, 2];
-    svg.selectAll("#"+id)
+    svg.selectAll("#" + id)
         .data(index)
         .attr("x1", function (i) {
             return data[i][0];
@@ -328,7 +365,7 @@ function update_triangle(data, id) {
  * @param id
  */
 function update_points(data, id) {
-    svg.selectAll("#"+id)
+    svg.selectAll("#" + id)
         .data(data)
         .attr("cx", function (d) {
             return d[0];
@@ -346,7 +383,7 @@ function update_points(data, id) {
  */
 function update_helper_lines(middle_data, outer_data, id) {
     var index = [0, 1, 2];
-    svg.selectAll("#"+id)
+    svg.selectAll("#" + id)
         .data(index)
         .attr("x1", function (i) {
             return middle_data[i][0];
@@ -369,36 +406,43 @@ function update_helper_lines(middle_data, outer_data, id) {
  * hides interactive sliders and buttons
  */
 function hide_editing_elements() {
-    document.getElementById('add_flag_buttonb').style.display = "none";
-    document.getElementById('checkboxes-triangle').style.display = "none";
-    document.getElementById('transformator').style.display = "none";
-    document.getElementById('proj-plane-form').style.display = "none";
-    document.getElementById('div-select-trafo').style.display = "none";
+    ui_elements["all_elements"].forEach(function (item, index) {
+        document.getElementById(item).style.display = "none";
+    });
 }
 
 /**
  * hides the little loading circle
  */
 function hide_loader() {
-    document.getElementById('loader-flags').style.display = "none";
+    document.getElementById('loader:flags').style.display = "none";
 }
 
 /**
  * displays interactive sliders and buttons
  */
 function show_editing_elements() {
-    document.getElementById('add_flag_buttonb').style.display = "block";
-    document.getElementById('checkboxes-triangle').style.display = "block";
-    document.getElementById('transformator').style.display = "block";
-    document.getElementById('div-select-trafo').style.display = "block";
-    document.getElementById('proj-plane-form').style.display = "inline";
+    // UI elements that are only displayed for this particular number of flags n.
+    console.log(Object.keys(ui_elements));
+
+    if (Object.keys(ui_elements).includes(n.toString())) {
+        ui_elements[n.toString()].forEach(function (item, index) {
+            document.getElementById(item).style.display = "block";
+        });
+    }
+    // UI elements that are displayed for all numbers of flags.
+    ui_elements["show_for_all_n"].forEach(function (item, index) {
+        document.getElementById(item).style.display = "block";
+    });
 }
 
 /**
  * displays the loading circle (during loading data from the server)
  */
 function show_loader() {
-    document.getElementById('loader-flags').style.display = "block";
+    document.getElementById('hint-type').style.display = "none";
+    document.getElementById('mode-description').innerHTML = "Loading transformation data.";
+    document.getElementById('loader:flags').style.display = "block";
 }
 
 /*
@@ -437,6 +481,8 @@ function get_intersection_with_frame(point0, point1) {
     }
     return output;
 }
+
+
 
 
 
