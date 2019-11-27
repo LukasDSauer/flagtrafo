@@ -11,7 +11,7 @@
 function switch_program_mode_to(mode) {
     if (mode === "standard") {
         program_mode = "standard";
-        document.getElementById('add_flag_buttonb').value = "Add flags";
+        document.getElementById('button-addflag').value = "Add flags";
         show_editing_elements();
         if (Object.keys(ui_elements).includes(n.toString())) {
             // Numbers with special transformations get the following hint:
@@ -27,8 +27,8 @@ function switch_program_mode_to(mode) {
         svg.selectAll("#p_line").remove();
         svg.selectAll("#helper_line").remove();
         hide_editing_elements();
-        document.getElementById("add_flag_buttonb").style.display = "block";
-        document.getElementById('add_flag_buttonb').value = "Finish";
+        document.getElementById("button-addflag").style.display = "block";
+        document.getElementById('button-addflag').value = "Finish";
         switch_program_mode_to("addPoints");
     }
     if (mode === "addPoints") {
@@ -471,8 +471,8 @@ function get_intersection_with_frame(point0, point1) {
         intersection_points.push([-b / a, 0]);
         intersection_points.push([(height - b) / a, height]);
         // Now we need to check whether the points are also inside the frame.
-        var x;
-        for (x in intersection_points) {
+
+        for (var x in intersection_points) {
             if (intersection_points[x][0] >= 0 && intersection_points[x][0] <= width && intersection_points[x][1] >= 0 && intersection_points[x][1] <= height) {
                 output.push(intersection_points[x]);
             }
