@@ -12,6 +12,13 @@ app.config['DEBUG'] = True
 
 FlaskJSON(app)
 
+"""
+Error codes:
+
+0 = No error.
+1 = The tuple of flags is not positive.
+"""
+
 
 @app.route('/')
 def home():
@@ -32,8 +39,8 @@ def get_transformation_data():
     # The input data from the post request contains information about the points "ps", the line they are on "ds",
     # as well as the projection plane "pplane".
     data = request.get_json()
-    #print("ALL THE DATA!")
-    #print(data)
+
+
     pplane = data["pplane"]
     old_pplane = data["oldpplane"]
     app.logger.info("Setting the projection plane to be " + str(pplane) + ".")
@@ -45,39 +52,54 @@ def get_transformation_data():
     if old_pplane == [0, 0, 1]:
         for i in range(n):
             p = data['ps'][i]
-            p.append(100.0)
+            # Note: We don't need this. Therefore, I commented it.
+            # The webpage svg calculates coordinates on the scale of pixels,
+            # which gives us very big numbers. We rescale them by a factor of 100.
+            #p[:] = [x/100 for x in p]
+            #p.append(1)
+            p.append(100)
             direction = data['ds'][i]
-            direction.append(100.0)
+            #direction[:] = [x/100 for x in direction]
+            #direction.append(1)
+            direction.append(100)
             fcomplex.add_flag(p, direction)
     else:
         for i in range(n):
             p = data['ps'][i]
-            p.append(100.0)
+            p.append(100)
             direction = data['ds'][i]
-            direction.append(100.0)
+            direction.append(100)
             rotation_matrix = rotate_vectors(np.array([0, 0, 1]), np.array(old_pplane))
             p = np.matmul(rotation_matrix, p)
             direction = np.matmul(rotation_matrix, direction)
 
             fcomplex.add_flag(p, direction)
 
+    tr = fcomplex.get_triple_ratio([0, 1, 2])
 
-    # Computing eruption flow data
-    fcomplex.create_triangulation()
-    triangle = fcomplex.triangles[0]
+    # Checking the triple flow condition:
+    if fcomplex.get_triple_ratio([0, 1, 2]) <= 0:
+        app.logger.info("Flag complex not positive!")
+        data['error'] = 1
+    else:
+        data['error'] = 0
 
-    app.logger.info("Computing eruption flow data.")
-    fcomplex.erupt_triangle(t=-10.01, triangle=triangle, transformation_style="Q")
-    for i in range(2001):
-        t = -1000 + i
-        fcomplex.erupt_triangle(t=0.01, triangle=triangle, transformation_style="Q")
-        fcomplex.draw_complex()
-        drawps = [(x * 100).tolist() for x in fcomplex.drawps]
-        drawqs = [(x * 100).tolist() for x in fcomplex.drawqs]
-        us = fcomplex.get_inner_triangle(triangle)
-        drawus = [(fcomplex.get_two_dimensional_point(x) * 100).tolist() for x in us]
-        data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
-    app.logger.info("Data successfully computed!")
+        # Computing eruption flow data
+        fcomplex.create_triangulation()
+        triangle = fcomplex.triangles[0]
+
+        app.logger.info("Computing eruption flow data.")
+        fcomplex.erupt_triangle(t=-10.01, triangle=triangle, transformation_style="Q")
+        for i in range(2001):
+            t = -1000 + i
+            fcomplex.erupt_triangle(t=0.01, triangle=triangle, transformation_style="Q")
+            fcomplex.draw_complex()
+            drawps = [(x * 100).tolist() for x in fcomplex.drawps]
+            drawqs = [(x * 100).tolist() for x in fcomplex.drawqs]
+            us = fcomplex.get_inner_triangle(triangle)
+            drawus = [(fcomplex.get_two_dimensional_point(x) * 100).tolist() for x in us]
+            data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
+        app.logger.info("Data successfully computed!")
     return jsonify(data)
 
 #@app.before_request

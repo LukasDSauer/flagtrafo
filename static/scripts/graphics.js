@@ -52,7 +52,7 @@ function submit_flags_button() {
             svg.selectAll("#newline").remove();
             switch_program_mode_to("standard");
         }
-    } else if (program_mode == "standard") {
+    } else if (program_mode === "standard") {
         switch_program_mode_to("addFlags");
         svg.on("mousemove", mouse_move_point_or_line)
             .on("click", mouse_click_point_or_line);
@@ -66,10 +66,10 @@ function submit_flags_button() {
 function mouse_move_point_or_line() {
     liveCoordinates = d3.mouse(this);
 
-    if (program_mode == "addPoints") {
+    if (program_mode === "addPoints") {
         //TODO: Change this to drawPoints, we don't need the extra function.
         draw_points([liveCoordinates], "newpoint", NEW_HIGHLIGHT_COLOR, flag_layer);
-    } else if (program_mode == "addLines") {
+    } else if (program_mode === "addLines") {
         draw_infinite_lines([fixedCoordinates], [liveCoordinates], "newline", NEW_HIGHLIGHT_COLOR, flag_layer);
     }
 }
@@ -140,9 +140,6 @@ function submit_projection_plane_button() {
  * order to prevent changes from the user.
  */
 function submit_flags_to_server(with_refresh) {
-    t = 0;
-    t_str = "0";
-
     hide_editing_elements();
     show_loader();
 
@@ -166,21 +163,25 @@ function submit_flags_to_server(with_refresh) {
         contentType: "application/json; charset=utf-8"
     })
         .done(function (data) {
-            console.info("All the transformation data received!")
-            trafo_data = data;
-            ps_2dim = trafo_data[t_str]["ps"];
-            qs_2dim = trafo_data[t_str]["qs"];
-            // From now on, we can use the qs for the ds, as they simply are another point on the line,
-            // and this is all that we need.
-            ds_2dim = trafo_data[t_str]["qs"];
-            us_2dim = trafo_data[t_str]["us"];
+            if(data["error"] !== 0){
+                alert(error_codes[data["error"]]);
+            }
+            else{
+                trafo_data = data;
+                ps_2dim = trafo_data[t_str]["ps"];
+                qs_2dim = trafo_data[t_str]["qs"];
+                // From now on, we can use the qs for the ds, as they simply are another point on the line,
+                // and this is all that we need.
+                ds_2dim = trafo_data[t_str]["qs"];
+                us_2dim = trafo_data[t_str]["us"];
 
+
+                if (with_refresh) {
+                    refresh_svg();
+                }
+            }
             hide_loader();
             switch_program_mode_to("standard");
-
-            if (with_refresh) {
-                refresh_svg();
-            }
         });
 }
 

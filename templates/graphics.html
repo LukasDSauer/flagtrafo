@@ -99,6 +99,12 @@
                 "3":
                     ['checks:triangle', 'transformator', 'div-select-trafo', 'proj-plane-form', 'opt:trafo-erupt']
             };
+
+        var error_codes =
+            ["No error",//0
+            "Error: The tuple of flags is not positive. This means that the inner polygon is not nested" +
+            "inside the outer polygon."//1
+            ];
         /**
          * @type {string} The color of a new geometric object hovering before being added.
          */
