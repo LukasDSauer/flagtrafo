@@ -67,7 +67,7 @@ function mouse_move_point_or_line() {
     liveCoordinates = d3.mouse(this);
 
     if (program_mode === "addPoints") {
-        //TODO: Change this to drawPoints, we don't need the extra function.
+        //TODO.md: Change this to drawPoints, we don't need the extra function.
         draw_points([liveCoordinates], "newpoint", NEW_HIGHLIGHT_COLOR, flag_layer);
     } else if (program_mode === "addLines") {
         draw_infinite_lines([fixedCoordinates], [liveCoordinates], "newline", NEW_HIGHLIGHT_COLOR, flag_layer);
@@ -153,7 +153,6 @@ function submit_flags_to_server(with_refresh) {
         "oldpplane": old_proj_plane
     };
     data = JSON.stringify(data);
-    console.log(data);
 
     $.ajax({
         type: "POST",
@@ -167,13 +166,22 @@ function submit_flags_to_server(with_refresh) {
                 alert(error_codes[data["error"]]);
             }
             else{
-                trafo_data = data;
-                ps_2dim = trafo_data[t_str]["ps"];
-                qs_2dim = trafo_data[t_str]["qs"];
+                if(n === 3) {
+                    trafo_type = "erupt";
+                    trafo_data[trafo_type] = data["erupt"];
+                }
+                if(n === 4) {
+                    trafo_type = "shear";
+                    trafo_data[trafo_type] = data["shear"];
+
+                }
+
+                ps_2dim = trafo_data[trafo_type][t_str]["ps"];
+                qs_2dim = trafo_data[trafo_type][t_str]["qs"];
                 // From now on, we can use the qs for the ds, as they simply are another point on the line,
                 // and this is all that we need.
-                ds_2dim = trafo_data[t_str]["qs"];
-                us_2dim = trafo_data[t_str]["us"];
+                ds_2dim = trafo_data[trafo_type][t_str]["qs"];
+                us_2dim = trafo_data[trafo_type][t_str]["us"];
 
 
                 if (with_refresh) {
@@ -194,9 +202,11 @@ function submit_flags_to_server(with_refresh) {
  */
 function refresh_svg() {
     update_points(ps_2dim, "point");
-    update_points(us_2dim, "u_point");
     update_points(ps_2dim, "p_point");
-    update_triangle(us_2dim, "u_line");
+    if (n===3){
+        update_points(us_2dim, "u_point");
+        update_triangle(us_2dim, "u_line");
+    }
     update_triangle(ps_2dim, "p_line");
     update_helper_lines(ps_2dim, qs_2dim, "helper_line");
     update_infinite_lines(ps_2dim, ds_2dim, "line");
@@ -424,8 +434,6 @@ function hide_loader() {
  */
 function show_editing_elements() {
     // UI elements that are only displayed for this particular number of flags n.
-    console.log(Object.keys(ui_elements));
-
     if (Object.keys(ui_elements).includes(n.toString())) {
         ui_elements[n.toString()].forEach(function (item, index) {
             document.getElementById(item).style.display = "block";
@@ -435,6 +443,12 @@ function show_editing_elements() {
     ui_elements["show_for_all_n"].forEach(function (item, index) {
         document.getElementById(item).style.display = "block";
     });
+    if(n === 3){
+        select_trafo.options[select_trafo.selectedIndex].value = "erupt";
+    }
+    if(n === 4){
+        select_trafo.options[select_trafo.selectedIndex].value = "shear";
+    }
 }
 
 /**

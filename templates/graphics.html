@@ -42,10 +42,10 @@
                 </div>
                 <div style="display:none" id="div-select-trafo">
                     <label>Trafo type
-                        <select>
-                            <option id="option-trafoerupt" value="erupt-flow" style="display:none">Eruption flow</option>
-                            <option id="option-trafobulge" value="bulge-flow" style="display:none">Bulge flow</option>
-                            <option id = "option-trafoshear" value="shear-flow" style="display:none">Shear flow</option>
+                        <select id = "select-trafo">
+                            <option id="option-trafoerupt" value="erupt" style="display:none">Eruption flow</option>
+                            <option id="option-trafobulge" value="bulge" style="display:none">Bulge flow</option>
+                            <option id = "option-trafoshear" value="shear" style="display:none">Shear flow</option>
                         </select>
                     </label>
                 </div>
@@ -74,7 +74,7 @@
                 <label>Transformation value: <span id="trafovalue">0</span>
                 </label>
                 <div class="slidecontainer">
-                    <input type="range" min="-1000" max="1000" value="0" class="slider" id="traforange"/>
+                    <input type="range" min="-1000" max="1000" value="0" class="slider" id="range-trafo"/>
                 </div>
             </div>
         </section>
@@ -89,7 +89,7 @@
         var style = window.getComputedStyle(document.body);
 
         //The numbers of flags for which there is some kind of interaction with the server.
-        var n_submit = [3];
+        var n_submit = [3, 4];
         // The maximal number of flags that can be drawn on the canvas.
         var n_max = 10;
 
@@ -104,9 +104,11 @@
             {
                 "all_elements": ['button-addflag', 'div-checkstriangle', 'div-trafo',
                     'div-select-trafo', 'form-pplane', 'option-trafoerupt'],
-                "show_for_all_n": ['button-addflag'],
+                "show_for_all_n": ['button-addflag', 'form-pplane'],
                 "3":
-                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'form-pplane', 'option-trafoerupt']
+                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'option-trafoerupt'],
+                "4":
+                    ['div-trafo', 'div-select-trafo', 'option-trafobulge', 'option-trafoshear']
             };
 
         /*
@@ -165,11 +167,19 @@
         /* Data for the transformations of the flag tuple. After initialization, it contains
          * values for ps_2dim[t], qs_2dim[t] and us_2dim[t] for each transformation parameter t.
          */
-        var trafo_data;
+        var trafo_data = {
+            "erupt": null,
+            "bulge": null,
+            "shear": null
+        };
+        /*
+         * Different types of transformations: "erupt", "bulge" and "shear".
+         */
+        var trafo_type = "";
 
         // Width and height of the SVG object.
-        var width = Math.min(2000, document.getElementById("div-canvas").offsetWidth - 100),
-            height = Math.min(2000, innerHeight - 200);
+        var width = Math.min(2000, document.getElementById("div-canvas").offsetWidth - 100);
+        var height = Math.min(2000, innerHeight - 200);
 
         // SVG object for data visualization, using D3.js
         var svg = d3.select("#div-canvas").append("svg")
@@ -204,7 +214,7 @@
         });
 
         // The slider for transformation
-        var slider = document.getElementById("traforange");
+        var slider = document.getElementById("range-trafo");
         document.getElementById("trafovalue").innerHTML = 0; // Display the default slider value
         slider.oninput = function () {
             // Round to two decimals (value between -10.01 and
@@ -212,10 +222,18 @@
             t = this.value;
             t_str = t.toString();
             // Update the current coordinates of the ps, qs and us.
-            ps_2dim = trafo_data[t_str]["ps"];
-            qs_2dim = trafo_data[t_str]["qs"];
-            us_2dim = trafo_data[t_str]["us"];
+            ps_2dim = trafo_data[trafo_type][t_str]["ps"];
+            qs_2dim = trafo_data[trafo_type][t_str]["qs"];
+            ds_2dim = qs_2dim;
+            us_2dim = trafo_data[trafo_type][t_str]["us"];
             refresh_svg(false);
+        };
+
+        // The dropdown menu for transformation type
+        var select_trafo = document.getElementById("select-trafo");
+        select_trafo.onchange = function () {
+            trafo_type = select_trafo.options[select_trafo.selectedIndex].value;
+            console.log(trafo_type);
         };
 
         // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
@@ -240,7 +258,7 @@
             }
         });
 
-        // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
+        // Checkbox for the helper lines. Check for showing, uncheck for removing.
         $('input[name=withHelper]').change(function () {
             if ($(this).is(':checked')) {
                 draw_helper_lines(ps_2dim, qs_2dim, "helper_line", FLAVOR_COLOR_3, background_layer)
