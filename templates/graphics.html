@@ -13,7 +13,7 @@
 {% block content %}
     <section class="container">
         <section class="row-top">
-            <b id="hint-type">Hint: </b><span id="mode-description">Hover over grey canvas to start. Left click to add
+            <b id="b-hinttype">Hint: </b><span id="span-modeinfo">Hover over grey canvas to start. Left click to add
                 point.</span>
         </section>
         <div class="row">
@@ -23,10 +23,10 @@
                         <input class="button-primary" type="button"
                                id="button-addflag"
                                value="Finish" style="display:block">
-                        <div class="loader" style="display:none" id="loader:flags"></div>
+                        <div class="loader" style="display:none" id="loader-flags"></div>
                     </fieldset>
                 </form>
-                <div style="display:none" id="checks-triangle">
+                <div style="display:none" id="div-checkstriangle">
                     <label>
                         <input type="checkbox" name="withInner" autocomplete="off"/>
                         Inner triangle
@@ -43,9 +43,9 @@
                 <div style="display:none" id="div-select-trafo">
                     <label>Trafo type
                         <select>
-                            <option id="opt:trafo-erupt" value="erupt-flow" style="display:none">Eruption flow</option>
-                            <option id="opt:trafo-bulge" value="bulge-flow" style="display:none">Bulge flow</option>
-                            <option id = "opt:trafo-shear" value="shear-flow" style="display:none">Shear flow</option>
+                            <option id="option-trafoerupt" value="erupt-flow" style="display:none">Eruption flow</option>
+                            <option id="option-trafobulge" value="bulge-flow" style="display:none">Bulge flow</option>
+                            <option id = "option-trafoshear" value="shear-flow" style="display:none">Shear flow</option>
                         </select>
                     </label>
                 </div>
@@ -55,22 +55,22 @@
 
         <section class="row">
             <div class="column column-50">
-                <form name="projection_plane_form" id="proj-plane-form" style="display:none">
+                <form name="projection_plane_form" id="form-pplane" style="display:none">
                     <fieldset>
                         <label form="projection_plane_form">Projection plane:
-                            <span id="pplane-value">(0, 0, 1)</span></label>
-                        <input type="text" name="ppx" placeholder="x" id="ppx"
+                            <span id="span-pplane">(0, 0, 1)</span></label>
+                        <input type="text" name="ppx" placeholder="x" id="input-ppx"
                                style="display: inline; white-space: nowrap; width: 15%">
-                        <input type="text" name="ppy" placeholder="y" id="ppy"
+                        <input type="text" name="ppy" placeholder="y" id="input-ppy"
                                style="display: inline; white-space: nowrap; width: 15%">
-                        <input type="text" name="ppz" placeholder="z" id="ppz"
+                        <input type="text" name="ppz" placeholder="z" id="input-ppz"
                                style="display: inline; white-space: nowrap; width: 15%">
                         <!--Type must be button, not submit. Otherwise, the page would be refreshed every time.-->
-                        <input class="button-primary" type="button" value="Set" id="ppsubmit">
+                        <input class="button-primary" type="button" value="Set" id="button-pplane">
                     </fieldset>
                 </form>
             </div>
-            <div class="column column-50" id="transformator" style="display:none">
+            <div class="column column-50" id="div-trafo" style="display:none">
                 <label>Transformation value: <span id="trafovalue">0</span>
                 </label>
                 <div class="slidecontainer">
@@ -102,11 +102,11 @@
          */
         var ui_elements =
             {
-                "all_elements": ['button-addflag', 'checks-triangle', 'transformator',
-                    'div-select-trafo', 'proj-plane-form', 'opt:trafo-erupt'],
+                "all_elements": ['button-addflag', 'div-checkstriangle', 'div-trafo',
+                    'div-select-trafo', 'form-pplane', 'option-trafoerupt'],
                 "show_for_all_n": ['button-addflag'],
                 "3":
-                    ['checks-triangle', 'transformator', 'div-select-trafo', 'proj-plane-form', 'opt:trafo-erupt']
+                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'form-pplane', 'option-trafoerupt']
             };
 
         /*
@@ -116,7 +116,7 @@
         var error_codes =
             ["No error",//0
              "Error: The tuple of flags is not positive. This means that the inner polygon is not nested" +
-            "inside the outer polygon."//1
+            " inside the outer polygon."//1
             ];
         // @type {string} The color of a new geometric object hovering before being added.
         var NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
@@ -191,14 +191,14 @@
          */
         // The "Add flag" button
         $(document).ready(function () {
-            $("#btnaddflag").click(function () {
+            $("#button-addflag").click(function () {
                 submit_flags_button();
             });
         });
 
         // The "Submit projection plane" button
         $(document).ready(function () {
-            $("#ppsubmit").click(function () {
+            $("#button-pplane").click(function () {
                 submit_projection_plane_button();
             });
         });

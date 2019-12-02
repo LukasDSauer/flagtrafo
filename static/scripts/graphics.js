@@ -15,8 +15,8 @@ function switch_program_mode_to(mode) {
         show_editing_elements();
         if (Object.keys(ui_elements).includes(n.toString())) {
             // Numbers with special transformations get the following hint:
-            document.getElementById('hint-type').style.display = "inline";
-            document.getElementById('mode-description').innerHTML =
+            document.getElementById('b-hinttype').style.display = "inline";
+            document.getElementById('span-modeinfo').innerHTML =
                 "Move slider to transform.";
         }
     }
@@ -33,12 +33,12 @@ function switch_program_mode_to(mode) {
     }
     if (mode === "addPoints") {
         program_mode = "addPoints";
-        document.getElementById('mode-description').innerHTML = "Click to add point. " +
+        document.getElementById('span-modeinfo').innerHTML = "Click to add point. " +
             "Click 'finish' to finish adding more flags.";
     }
     if (mode === "addLines") {
         program_mode = "addLines";
-        document.getElementById('mode-description').innerHTML = "Click to add line. ";
+        document.getElementById('span-modeinfo').innerHTML = "Click to add line. ";
     }
 
 }
@@ -114,9 +114,9 @@ function mouse_click_point_or_line() {
  * using the submit_flags_to_server() function.
  */
 function submit_projection_plane_button() {
-    var x = parseFloat($("#ppx").val());
-    var y = parseFloat($("#ppy").val());
-    var z = parseFloat($("#ppz").val());
+    var x = parseFloat($("#input-ppx").val());
+    var y = parseFloat($("#input-ppy").val());
+    var z = parseFloat($("#input-ppz").val());
 
     // Verifying whether the inputs are actual numbers.
     if (isNaN(x) || isNaN(y) || isNaN(z)) {
@@ -125,7 +125,7 @@ function submit_projection_plane_button() {
         old_proj_plane = proj_plane;
         proj_plane = [x, y, z];
         submit_flags_to_server(true);
-        document.getElementById("pplane-value").innerHTML = "(" + proj_plane[0] + ", " + proj_plane[1] + ", " + proj_plane[2] + ")";
+        document.getElementById("span-pplane").innerHTML = "(" + proj_plane[0] + ", " + proj_plane[1] + ", " + proj_plane[2] + ")";
     }
 }
 
@@ -416,7 +416,7 @@ function hide_editing_elements() {
  * hides the little loading circle
  */
 function hide_loader() {
-    document.getElementById('loader:flags').style.display = "none";
+    document.getElementById('loader-flags').style.display = "none";
 }
 
 /**
@@ -441,9 +441,9 @@ function show_editing_elements() {
  * displays the loading circle (during loading data from the server)
  */
 function show_loader() {
-    document.getElementById('hint-type').style.display = "none";
-    document.getElementById('mode-description').innerHTML = "Loading transformation data.";
-    document.getElementById('loader:flags').style.display = "block";
+    document.getElementById('b-hinttype').style.display = "none";
+    document.getElementById('span-modeinfo').innerHTML = "Loading transformation data.";
+    document.getElementById('loader-flags').style.display = "block";
 }
 
 /*

@@ -75,8 +75,6 @@ def get_transformation_data():
 
             fcomplex.add_flag(p, direction)
 
-    tr = fcomplex.get_triple_ratio([0, 1, 2])
-
     # Checking the triple flow condition:
     if fcomplex.get_triple_ratio([0, 1, 2]) <= 0:
         app.logger.info("Flag complex not positive!")
@@ -94,12 +92,30 @@ def get_transformation_data():
             t = -1000 + i
             fcomplex.erupt_triangle(t=0.01, triangle=triangle, transformation_style="Q")
             fcomplex.draw_complex()
-            drawps = [(x * 100).tolist() for x in fcomplex.drawps]
-            drawqs = [(x * 100).tolist() for x in fcomplex.drawqs]
-            us = fcomplex.get_inner_triangle(triangle)
-            drawus = [(fcomplex.get_two_dimensional_point(x) * 100).tolist() for x in us]
-            data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
-        app.logger.info("Data successfully computed!")
+            fc_drawus = fcomplex.get_projected_us(triangle)
+
+            drawps= []
+            drawqs= []
+            drawus = []
+
+            for k in range(n):
+                x = fcomplex.drawps[k]
+                if x is not None:
+                    drawps.append((x*100).tolist())
+                else:
+                    drawps.append(None)
+                x = fcomplex.drawqs[k]
+                if x is not None:
+                    drawqs.append((x * 100).tolist())
+                else:
+                    drawqs.append(None)
+                x = fc_drawus[k]
+                if x is not None:
+                    drawus.append((x * 100).tolist())
+                else:
+                    drawus.append(None)
+                data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
+                app.logger.info("Data successfully computed!")
     return jsonify(data)
 
 #@app.before_request

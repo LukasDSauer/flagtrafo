@@ -1,5 +1,5 @@
 Flask==1.1.1
 Flask-JSON==0.3.3
 simplejson==3.16.0
-numpy==1.17.3
+numpy==1.17.4
 flagcomplex
