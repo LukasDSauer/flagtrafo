@@ -7,6 +7,7 @@
     <script type="text/javascript" src="http://www.json.org/json2.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="{{ url_for('static',filename='scripts/graphics.js') }}"></script>
+    <script type="text/javascript" src="//d3js.org/d3.v5.min.js"></script>
 </head>
 <body>
 {% extends "template.html" %}
@@ -80,7 +81,6 @@
         </section>
     </section>
     </body>
-    <script type="text/javascript" src="//d3js.org/d3.v5.min.js"></script>
     <script type="text/javascript">
         /**
          * Fixed variables
@@ -233,7 +233,6 @@
         var select_trafo = document.getElementById("select-trafo");
         select_trafo.onchange = function () {
             trafo_type = select_trafo.options[select_trafo.selectedIndex].value;
-            console.log(trafo_type);
         };
 
         // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.

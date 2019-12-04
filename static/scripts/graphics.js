@@ -150,7 +150,9 @@ function submit_flags_to_server(with_refresh) {
         "ps": ps_2dim,
         "ds": ds_2dim,
         "pplane": proj_plane,
-        "oldpplane": old_proj_plane
+        "oldpplane": old_proj_plane,
+        "width": width,
+        "height": height
     };
     data = JSON.stringify(data);
 
@@ -172,8 +174,9 @@ function submit_flags_to_server(with_refresh) {
                 }
                 if(n === 4) {
                     trafo_type = "shear";
+                    select_trafo.value = "shear";
                     trafo_data[trafo_type] = data["shear"];
-
+                    trafo_data["bulge"] = data["bulge"];
                 }
 
                 ps_2dim = trafo_data[trafo_type][t_str]["ps"];
@@ -209,7 +212,7 @@ function refresh_svg() {
     }
     update_triangle(ps_2dim, "p_line");
     update_helper_lines(ps_2dim, qs_2dim, "helper_line");
-    update_infinite_lines(ps_2dim, ds_2dim, "line");
+    update_infinite_lines(trafo_data[trafo_type][t_str]["frameints"][0], trafo_data[trafo_type][t_str]["frameints"][1], "line");
 }
 
 /**
@@ -293,6 +296,7 @@ function draw_triangle(data, id, color, layer) {
         layer.append("line")
             .attr("id", id)
             .style('stroke', color)
+            .style('stroke-opacity', 0.8)
             .attr("x1", data[i][0])
             .attr("y1", data[i][1])
             .attr("x2", data[(i + 1) % 3][0])
@@ -328,7 +332,8 @@ function draw_helper_lines(data_middle, data_outer, id, color, layer) {
 function update_infinite_lines(data0, data1, id) {
     data = [];
     for (var i = 0; i < data0.length; i++) {
-        data.push(get_intersection_with_frame(data0[i], data1[i]));
+        //data.push(get_intersection_with_frame(data0[i], data1[i]));
+        data.push([data0[i], data1[i]]);
     }
 
     svg.selectAll("#" + id)
@@ -443,12 +448,6 @@ function show_editing_elements() {
     ui_elements["show_for_all_n"].forEach(function (item, index) {
         document.getElementById(item).style.display = "block";
     });
-    if(n === 3){
-        select_trafo.options[select_trafo.selectedIndex].value = "erupt";
-    }
-    if(n === 4){
-        select_trafo.options[select_trafo.selectedIndex].value = "shear";
-    }
 }
 
 /**

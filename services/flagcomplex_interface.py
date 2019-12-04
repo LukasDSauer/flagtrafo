@@ -1,6 +1,7 @@
 import numpy as np
 from flagcomplex import FlagComplex
 from flagcomplex.EuklGeometryUtility import rotate_vectors
+from flagcomplex.ProjGeometryUtility import connecting_line, line_intersection
 
 
 def init_flagcomplex_from_data(n, data, pplane, old_pplane):
@@ -37,7 +38,7 @@ def init_flagcomplex_from_data(n, data, pplane, old_pplane):
     return fcomplex
 
 
-def compute_eruption_data(fcomplex, triangle):
+def compute_eruption_data(fcomplex, triangle, width, height):
     data = dict()
     fcomplex.erupt_triangle(t=-10.01, triangle=triangle, transformation_style="Q")
     for i in range(2001):
@@ -50,11 +51,15 @@ def compute_eruption_data(fcomplex, triangle):
         drawqs = rescale_existing_points(3, fcomplex.drawqs)
         drawus = rescale_existing_points(3, fc_drawus)
 
-        data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
+        frameints = compute_intersection_points_with_frame(width, height, fcomplex)
+        frameints = [rescale_existing_points(2, points) for points in frameints]
+
+
+        data[t] = {"ps": drawps, "qs": drawqs, "us": drawus, "frameints": frameints}
 
     return data
 
-def compute_shear_data(fcomplex, quad):
+def compute_shear_data(fcomplex, quad, width, height):
     data = dict()
 
     fcomplex.shear_quadrilateral(t=-10.01, quad=quad)
@@ -66,11 +71,14 @@ def compute_shear_data(fcomplex, quad):
         drawps = rescale_existing_points(4, fcomplex.drawps)
         drawqs = rescale_existing_points(4, fcomplex.drawqs)
 
-        data[t] = {"ps": drawps, "qs": drawqs}
+        frameints = compute_intersection_points_with_frame(width, height, fcomplex)
+        frameints = [rescale_existing_points(2, points) for points in frameints]
+
+        data[t] = {"ps": drawps, "qs": drawqs, "frameints": frameints}
 
     return data
 
-def compute_bulge_data(fcomplex, quad):
+def compute_bulge_data(fcomplex, quad, width, height):
     data = dict()
 
     fcomplex.bulge_quadrilateral(t=-10.01, quad=quad)
@@ -82,7 +90,10 @@ def compute_bulge_data(fcomplex, quad):
         drawps = rescale_existing_points(4, fcomplex.drawps)
         drawqs = rescale_existing_points(4, fcomplex.drawqs)
 
-        data[t] = {"ps": drawps, "qs": drawqs}
+        frameints = compute_intersection_points_with_frame(width, height, fcomplex)
+        frameints = [rescale_existing_points(len(points), points) for points in frameints]
+
+        data[t] = {"ps": drawps, "qs": drawqs, "frameints": frameints}
 
     return data
 
@@ -104,3 +115,44 @@ def rescale_existing_points(n, points):
         else:
             points_r.append(None)
     return points_r
+
+
+def compute_intersection_points_with_frame(width, height, fcomplex):
+    rotation_matrix = rotate_vectors(np.array([0, 0, 1]), fcomplex.projection_plane)
+    image_bottom_line = connecting_line(np.array([0, 0, 100]), np.array([width, 0, 100]))
+    image_top_line = connecting_line(np.array([0, height, 100]), np.array([width, height, 100]))
+    image_left_line = connecting_line(np.array([0, 0, 100]), np.array([0, height, 100]))
+    image_right_line = connecting_line(np.array([width, 0, 100]), np.array([width, height, 100]))
+
+    image_bottom_line = np.matmul(rotation_matrix, image_bottom_line)
+    image_top_line = np.matmul(rotation_matrix, image_top_line)
+    image_left_line = np.matmul(rotation_matrix, image_left_line)
+    image_right_line = np.matmul(rotation_matrix, image_right_line)
+
+    frame_lines = [image_bottom_line, image_top_line, image_left_line, image_right_line]
+    intersection_points = []
+
+    for line in fcomplex.ls:
+        intersection_points_for_line = []
+        for fline in frame_lines:
+            try:
+                point = line_intersection(line, fline)
+                point_2dim = fcomplex.get_two_dimensional_point(point)
+                if 0 <= point_2dim[0] <= width and 0 <= point_2dim[1] <= height:
+                    intersection_points_for_line.append(point_2dim)
+            except AssertionError:
+                0
+        intersection_points.append(intersection_points_for_line)
+
+    return intersection_points
+
+
+
+
+
+
+
+
+
+
+

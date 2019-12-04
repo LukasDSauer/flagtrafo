@@ -37,6 +37,8 @@ def get_transformation_data():
     data = request.get_json()
     pplane = data["pplane"]
     old_pplane = data["oldpplane"]
+    width = data["width"]
+    height = data["height"]
     n = len(data['ps'])
 
     fcomplex = init_flagcomplex_from_data(n, data, pplane, old_pplane)
@@ -53,14 +55,14 @@ def get_transformation_data():
         fcomplex.create_triangulation()
         if n == 3:
             triangle = fcomplex.triangles[0]
-            data['erupt'] = compute_eruption_data(fcomplex, triangle)
+            data['erupt'] = compute_eruption_data(fcomplex, triangle,  width, height)
             app.logger.info("Computed eruption flow data.")
         if n == 4:
             quad = [0, 1, 2, 3]
             fcomplex1 = copy.deepcopy(fcomplex)
-            data['shear'] = compute_shear_data(fcomplex1, quad)
+            data['shear'] = compute_shear_data(fcomplex1, quad, width, height)
             app.logger.info("Computed shear flow data.")
-            data['bulge'] = compute_bulge_data(fcomplex, quad)
+            data['bulge'] = compute_bulge_data(fcomplex, quad,  width, height)
             app.logger.info("Computed bulge flow data.")
 
         app.logger.info("All data successfully computed!")
