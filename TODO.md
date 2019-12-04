@@ -9,6 +9,9 @@
 
 * Adding licences to alien software parts.
 
+* Shear flow: Unusal orderings of the tuple: 0,2, 1, 3.
+ Is the behaviour reasonable or not.
+
 
 ## Ansible install:
 

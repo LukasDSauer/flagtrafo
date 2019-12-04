@@ -44,7 +44,7 @@ def get_transformation_data():
 
 
     # Checking the triple flow condition:
-    if fcomplex.get_triple_ratio([0, 1, 2]) <= 0:
+    if not fcomplex.is_complex_positive():
         app.logger.info("Flag complex not positive!")
         data['error'] = 1
     else:

@@ -164,6 +164,11 @@ function submit_flags_to_server(with_refresh) {
         .done(function (data) {
             if(data["error"] !== 0){
                 alert(error_codes[data["error"]]);
+                svg.selectAll("#point").remove();
+                svg.selectAll("#line").remove();
+                n = 0;
+                hide_loader();
+                switch_program_mode_to("addFlags");
             }
             else{
                 if(n === 3) {
@@ -173,7 +178,8 @@ function submit_flags_to_server(with_refresh) {
                 if(n === 4) {
                     trafo_type = "shear";
                     trafo_data[trafo_type] = data["shear"];
-
+                    trafo_data["bulge"] = data["bulge"];
+                    select_trafo.value = "shear";
                 }
 
                 ps_2dim = trafo_data[trafo_type][t_str]["ps"];
@@ -187,9 +193,9 @@ function submit_flags_to_server(with_refresh) {
                 if (with_refresh) {
                     refresh_svg();
                 }
+                hide_loader();
+                switch_program_mode_to("standard");
             }
-            hide_loader();
-            switch_program_mode_to("standard");
         });
 }
 
@@ -472,29 +478,46 @@ function show_loader() {
  * @returns {[]}: an array of two 2-dim arrays
  */
 function get_intersection_with_frame(point0, point1) {
-    var output = [];
+    /*
+     * In fact, for our purpose it is not important that the intersection points
+     * really lie exactly on the canvas. They just need to lie outside the canvas.
+     * Therefore, we consider the vectors t*(point1-point0)+ point0 for all t.
+     * They describe the line passing to point1 and point0. Now we only need to
+     * choose t big (and small) enough in order to get out of the canvas.
+     *
+     * This simplification reduces rounding errors in comparison to the calculation
+     * of the precise intersection points.
+     */
+    var diff = [point1[0] - point0[0], point1[1] - point0[1]];
 
-    if (point0[0] - point1[0] !== Infinity) {
-        var a = (point0[1] - point1[1]) / (point0[0] - point1[0]);
-        var b = point0[1] - a * point0[0];
-        // The following points are the possible intersection
-        // points of the line a*x+b with the image frame lines.
-        var intersection_points = [];
-        intersection_points.push([0, b]);
-        intersection_points.push([width, a * width + b]);
-        intersection_points.push([-b / a, 0]);
-        intersection_points.push([(height - b) / a, height]);
-        // Now we need to check whether the points are also inside the frame.
+    var t = 0;
 
-        for (var x in intersection_points) {
-            if (intersection_points[x][0] >= 0 && intersection_points[x][0] <= width && intersection_points[x][1] >= 0 && intersection_points[x][1] <= height) {
-                output.push(intersection_points[x]);
-            }
-        }
-    } else {
-        console.info('Handling exception Infinity!');
+    if(diff[0] !== 0 && diff[1] !== 0){
+        t = Math.max(Math.abs((width+point0[0])/diff[0]), Math.abs((height+point0[1])/ diff[1]));
     }
-    return output;
+    else if (diff[0] !== 0){
+        t = Math.abs((width+point0[0])/diff[0]);
+    }
+    else if (diff[1] !== 0){
+        t = Math.abs((height+point0[1])/ diff[1]);
+    }
+    else{
+        return [point0, point1]
+    }
+
+    t = order_of_magnitude(t)*10;
+    return [[t * diff[0] + point0[0], t * diff[1] + point0[1]], [-t * diff[0] + point0[0], -t * diff[1] + point0[1]]];
+}
+
+/**
+ * Returns the order of magnitude for a float n, e.g. for n = 104634, we get 100000.
+ * @param n
+ * @returns {number}
+ */
+function order_of_magnitude(n) {
+    var order = Math.floor(Math.log(n) / Math.LN10
+                       + 0.000000001); // because float math sucks like that
+    return Math.pow(10,order);
 }
 
 

@@ -63,8 +63,12 @@ def compute_shear_data(fcomplex, quad):
         fcomplex.shear_quadrilateral(t=0.01, quad=quad)
         fcomplex.draw_complex()
 
+        fc_drawus = fcomplex.get_projected_us()
+
         drawps = rescale_existing_points(4, fcomplex.drawps)
         drawqs = rescale_existing_points(4, fcomplex.drawqs)
+        drawus = rescale_existing_points(3, fc_drawus)
+
 
         data[t] = {"ps": drawps, "qs": drawqs}
 

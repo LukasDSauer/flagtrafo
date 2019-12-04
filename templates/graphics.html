@@ -233,8 +233,11 @@
         var select_trafo = document.getElementById("select-trafo");
         select_trafo.onchange = function () {
             trafo_type = select_trafo.options[select_trafo.selectedIndex].value;
-            console.log(trafo_type);
-        };
+            ps_2dim = trafo_data[trafo_type][t_str]["ps"];
+            qs_2dim = trafo_data[trafo_type][t_str]["qs"];
+            ds_2dim = qs_2dim;
+            us_2dim = trafo_data[trafo_type][t_str]["us"];
+            refresh_svg(false);        };
 
         // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
         $('input[name=withInner]').change(function () {
