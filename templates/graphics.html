@@ -41,7 +41,11 @@
                     </label>
                     <label style="display:none" id="input-withellipse">
                         <input type="checkbox" name="withEllipse" autocomplete="off"/>
-                        Ellipses
+                        Ellipse
+                    </label>
+                    <label style="display:none" id="input-withconvex">
+                        <input type="checkbox" name="withConvex" autocomplete="off"/>
+                        Convex Set
                     </label>
                 </div>
                 <div style="display:none" id="div-select-trafo">
@@ -97,6 +101,14 @@
         // The maximal number of flags that can be drawn on the canvas.
         var n_max = 10;
 
+        var trafo_range = 100;
+
+        document.getElementById("range-trafo").max = trafo_range;
+        document.getElementById("range-trafo").min = - trafo_range;
+
+
+
+
         /*
          * A JSON object of ids of UI elements.
          *
@@ -107,8 +119,9 @@
         var ui_elements =
             {
                 "all_elements": ['button-addflag', 'div-checkstriangle', 'div-trafo',
-                    'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withhelper', 'input-withellipse'],
-                "show_for_all_n": ['button-addflag', 'form-pplane'],
+                    'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withhelper', 'input-withellipse',
+                'input-withconvex'],
+                "show_for_all_n": ['button-addflag', 'form-pplane', 'input-withconvex'],
                 "3":
                     ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'option-trafoerupt', 'input-withhelper'],
                 "4":
@@ -130,6 +143,8 @@
         var FLAVOR_COLOR_1 = style.getPropertyValue('--flavor-color-1');
         var FLAVOR_COLOR_2 = style.getPropertyValue('--flavor-color-2');
         var FLAVOR_COLOR_3 = style.getPropertyValue('--flavor-color-3');
+        var FLAVOR_COLOR_4 = style.getPropertyValue('--flavor-color-4');
+
         /*
          * @type {string} The mode that the application is in at the moment.
          * Sensible values are "addPoints", "addLines" and "standard"
@@ -150,6 +165,8 @@
         var qs_2dim = [];
         // ... the points defining the inner triangles (for the eruption flow).
         var us_2dim = [];
+
+        var convex = [];
 
         // Current coordinates of the mouse (if hovering over the SVG).
         var liveCoordinates = [0, 0];
@@ -181,7 +198,7 @@
 
 
         /*
-         * Different types of transformations: "erupt", "bulge" and "shear".
+         * Different types of transformations: "erupt", "bulge" and "shear" and "no_trafo".
          */
         var trafo_type = "";
 
@@ -226,7 +243,9 @@
         document.getElementById("trafovalue").innerHTML = 0; // Display the default slider value
         slider.oninput = function () {
             // Round to two decimals (value between -10.01 and
-            document.getElementById("trafovalue").innerHTML = Math.round((this.value / 100 + 0.00001) * 100) / 100;
+            document.getElementById("trafovalue").innerHTML =
+                Math.round((this.value * 10 / trafo_range + 0.00001) * trafo_range/10) *10/trafo_range;
+
             t = this.value;
             t_str = t.toString();
             // Update the current coordinates of the ps, qs and us.
@@ -234,6 +253,7 @@
             qs_2dim = trafo_data[trafo_type][t_str]["qs"];
             ds_2dim = qs_2dim;
             us_2dim = trafo_data[trafo_type][t_str]["us"];
+            convex = trafo_data[trafo_type][t_str]["convex"];
             refresh_svg(false);
         };
 
@@ -245,6 +265,7 @@
             qs_2dim = trafo_data[trafo_type][t_str]["qs"];
             ds_2dim = qs_2dim;
             us_2dim = trafo_data[trafo_type][t_str]["us"];
+            convex = trafo_data[trafo_type][t_str]["convex"];
             if(trafo_type === 'shear'){
                 document.getElementById('input-withellipse').style.display = "block";
             }
@@ -298,12 +319,22 @@
             }
         });
 
-        // Checkbox for the helper lines. Check for showing, uncheck for removing.
+        // Checkbox for the ellipse. Check for showing, uncheck for removing.
         $('input[name=withEllipse]').change(function () {
             if ($(this).is(':checked')) {
                 draw_triangle(ellipse, "ellipse", FLAVOR_COLOR_3, background_layer);
             } else {
                 svg.selectAll("#ellipse").remove();
+            }
+        });
+
+        // Checkbox for the convex set. Check for showing, uncheck for removing.
+        $('input[name=withConvex]').change(function () {
+            if ($(this).is(':checked')) {
+                draw_polygon(convex, "convex", FLAVOR_COLOR_4, background_layer);
+                //draw_triangle(convex, "convex", NEW_HIGHLIGHT_COLOR, background_layer);
+            } else {
+                svg.selectAll("#convex").remove();
             }
         });
 

@@ -21,12 +21,18 @@ function switch_program_mode_to(mode) {
         }
     }
     if (mode === "addFlags") {
-        for(let i= 0; i < us_2dim.length; i++) {
-        svg.selectAll("#u_point"+i.toString()).remove();
-        svg.selectAll("#u_line"+i.toString()).remove();}
-        svg.selectAll("#p_point").remove();
-        svg.selectAll("#p_line").remove();
+        for (let i = 0; i < us_2dim.length; i++) {
+            svg.selectAll("#u_point" + i.toString()).remove();
+            svg.selectAll("#u_line" + i.toString()).remove();
+        }
+        for (let i = 1; i < n - 1; i++) {
+            svg.selectAll("#p_point" + i.toString()).remove();
+            svg.selectAll("#p_line" + i.toString()).remove();
+        }
         svg.selectAll("#helper_line").remove();
+        svg.selectAll("#convex").remove();
+        svg.selectAll("#ellipse").remove();
+
         hide_editing_elements();
         document.getElementById("button-addflag").style.display = "block";
         document.getElementById('button-addflag').value = "Finish";
@@ -46,7 +52,7 @@ function switch_program_mode_to(mode) {
 
 function submit_flags_button() {
     if (program_mode === "addPoints" || program_mode === "addLines") {
-        if (n_submit.includes(n)) {
+        if (n > 2) {
             submit_flags_to_server(false);
         } else {
             svg.selectAll("#newpoint").remove();
@@ -87,8 +93,8 @@ function mouse_click_point_or_line() {
     } else if (program_mode == "addLines") {
         if (n <= n_max) {
             svg.selectAll("#newline")
-            .style('stroke', '#393939')
-            .attr("id", "line");
+                .style('stroke', '#393939')
+                .attr("id", "line");
 
             svg.selectAll("#newpoint")
                 .style('stroke', '#393939')
@@ -166,25 +172,28 @@ function submit_flags_to_server(with_refresh) {
         contentType: "application/json; charset=utf-8"
     })
         .done(function (data) {
-            if(data["error"] !== 0){
+            if (data["error"] !== 0) {
                 alert(error_codes[data["error"]]);
                 svg.selectAll("#point").remove();
                 svg.selectAll("#line").remove();
                 n = 0;
                 hide_loader();
                 switch_program_mode_to("addFlags");
-            }
-            else{
-                if(n === 3) {
+            } else {
+                if (n === 3) {
                     trafo_type = "erupt";
                     trafo_data[trafo_type] = data["erupt"];
                 }
-                if(n === 4) {
+                if (n === 4) {
                     trafo_type = "shear";
                     trafo_data[trafo_type] = data["shear"];
                     trafo_data["bulge"] = data["bulge"];
                     select_trafo.value = "shear";
                     ellipse = data["ellipse"];
+                }
+                if (n > 4){
+                    trafo_type= "no_trafo";
+                    trafo_data[trafo_type] = data["shear"];
                 }
 
                 ps_2dim = trafo_data[trafo_type][t_str]["ps"];
@@ -193,6 +202,7 @@ function submit_flags_to_server(with_refresh) {
                 // and this is all that we need.
                 ds_2dim = trafo_data[trafo_type][t_str]["qs"];
                 us_2dim = trafo_data[trafo_type][t_str]["us"];
+                convex = trafo_data[trafo_type][t_str]["convex"];
 
 
                 if (with_refresh) {
@@ -214,16 +224,18 @@ function submit_flags_to_server(with_refresh) {
 function refresh_svg() {
     update_points(ps_2dim, "point");
     update_points(ps_2dim, "p_point");
-    for(let i= 0; i < us_2dim.length; i++) {
-        update_points(us_2dim[i], "u_point"+i.toString());
-        update_triangle(us_2dim[i], "u_line"+i.toString());
+    for (let i = 0; i < us_2dim.length; i++) {
+        update_points(us_2dim[i], "u_point" + i.toString());
+        update_triangle(us_2dim[i], "u_line" + i.toString());
     }
-    for(let i= 1; i < n-1; i++) {
-        var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i+1]];
-        update_triangle(points, "p_line"+(i-1).toString());
+    for (let i = 1; i < n - 1; i++) {
+        var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i + 1]];
+        update_triangle(points, "p_line" + (i - 1).toString());
     }
     update_helper_lines(ps_2dim, qs_2dim, "helper_line");
     update_infinite_lines(ps_2dim, ds_2dim, "line");
+
+    update_polygon(convex, "convex");
 }
 
 /**
@@ -297,13 +309,14 @@ function draw_points(data, id, color, layer) {
 
 /**
  * draws lines connecting the three corners of the triangle specified in data
+ * or more generally also draws a polygon.
  *
  * @param data: a 3-dim array of 2-dim arrays
  * @param id: an id string for identifying the triangle's lines later
  * @param color: a color string specifying the object's color
  */
 function draw_triangle(data, id, color, layer) {
-    for (let i = 0; i<data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
         layer.append("line")
             .attr("id", id)
             .style('stroke', color)
@@ -321,7 +334,7 @@ function draw_triangle(data, id, color, layer) {
  * @param id: an id string for identifying the lines later
  * @param color: a color string specifying the object's color
  */
-function draw_helper_lines(data_middle, data_outer, id, color, layer) {
+function draw_helper_lines(data_mibddle, data_outer, id, color, layer) {
     for (var i = 0; data_middle.length - 1; i++) {
         layer.append("line")
             .attr("id", id)
@@ -331,6 +344,33 @@ function draw_helper_lines(data_middle, data_outer, id, color, layer) {
             .attr("x2", data_outer[(i + 2) % 3][0])
             .attr("y2", data_outer[(i + 2) % 3][1]);
     }
+}
+
+function draw_polygon(data, id, color, layer) {
+    layer.selectAll(id)
+        .data([data])
+        .enter().append("polygon")
+        .attr("id", id)
+        .attr("points", function (d) {
+            return d.map(function (d) {
+                return [d[0], d[1]].join(",");
+            }).join(" ");
+        })
+        .attr("stroke", color)
+        .attr("stroke-width", 1)
+        .attr("fill", color)
+        .attr("fill-opacity", 0.1);
+
+}
+
+function update_polygon(data, id) {
+    svg.selectAll("#" + id)
+        .data([data])
+        .attr("points", function (d) {
+            return d.map(function (d) {
+                return [d[0], d[1]].join(",");
+            }).join(" ");
+        });
 }
 
 /**
@@ -367,7 +407,11 @@ function update_infinite_lines(data0, data1, id) {
  * @param id
  */
 function update_triangle(data, id) {
-    var index = [0, 1, 2];
+    let l = data.length;
+    let index = [];
+    for (let i = 0; i < l; i++) {
+        index.push(i);
+    }
     svg.selectAll("#" + id)
         .data(index)
         .attr("x1", function (i) {
@@ -377,10 +421,10 @@ function update_triangle(data, id) {
             return data[i][1];
         })
         .attr("x2", function (i) {
-            return data[(i + 1) % 3][0];
+            return data[(i + 1) % l][0];
         })
         .attr("y2", function (i) {
-            return data[(i + 1) % 3][1];
+            return data[(i + 1) % l][1];
         });
 }
 
@@ -457,10 +501,10 @@ function show_editing_elements() {
     ui_elements["show_for_all_n"].forEach(function (item, index) {
         document.getElementById(item).style.display = "block";
     });
-    if(n === 3){
+    if (n === 3) {
         select_trafo.options[select_trafo.selectedIndex].value = "erupt";
     }
-    if(n === 4){
+    if (n === 4) {
         select_trafo.options[select_trafo.selectedIndex].value = "shear";
         document.getElementById('input-withellipse').style.display = "block";
     }
@@ -501,20 +545,17 @@ function get_intersection_with_frame(point0, point1) {
 
     var t = 0;
 
-    if(diff[0] !== 0 && diff[1] !== 0){
-        t = Math.max(Math.abs((width+point0[0])/diff[0]), Math.abs((height+point0[1])/ diff[1]));
-    }
-    else if (diff[0] !== 0){
-        t = Math.abs((width+point0[0])/diff[0]);
-    }
-    else if (diff[1] !== 0){
-        t = Math.abs((height+point0[1])/ diff[1]);
-    }
-    else{
+    if (diff[0] !== 0 && diff[1] !== 0) {
+        t = Math.max(Math.abs((width + point0[0]) / diff[0]), Math.abs((height + point0[1]) / diff[1]));
+    } else if (diff[0] !== 0) {
+        t = Math.abs((width + point0[0]) / diff[0]);
+    } else if (diff[1] !== 0) {
+        t = Math.abs((height + point0[1]) / diff[1]);
+    } else {
         return [point0, point1]
     }
 
-    t = order_of_magnitude(t)*10;
+    t = order_of_magnitude(t) * 10;
     return [[t * diff[0] + point0[0], t * diff[1] + point0[1]], [-t * diff[0] + point0[0], -t * diff[1] + point0[1]]];
 }
 
@@ -525,8 +566,8 @@ function get_intersection_with_frame(point0, point1) {
  */
 function order_of_magnitude(n) {
     var order = Math.floor(Math.log(n) / Math.LN10
-                       + 0.000000001); // because float math sucks like that
-    return Math.pow(10,order);
+        + 0.000000001); // because float math sucks like that
+    return Math.pow(10, order);
 }
 
 

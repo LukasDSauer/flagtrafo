@@ -12,9 +12,11 @@
 * Shear flow: Unusal orderings of the tuple: 0,2, 1, 3.
  Is the behaviour reasonable or not.
  
-* Correct middle triangle for case n = 4
+* Correct middle triangle for case n = 4 --> Done!
 
-* Ellipse for case n = 4 and shear flow
+* Ellipse for case n = 4 and shear flow --> Done!
+
+* Eruption flow for case n=4.
 
 * Convex set for cases up to n = 10.
 

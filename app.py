@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 from flask_json import FlaskJSON
-from flagcomplex import FlagComplex
+from flagcomplex import FlagComplex, FlagTesselator
 import copy
 from services.flagcomplex_interface import init_flagcomplex_from_data,\
-    compute_eruption_data, compute_shear_data, compute_bulge_data, compute_ellipse
+    compute_eruption_data, compute_shear_data, compute_bulge_data, compute_ellipse,\
+    rescale_existing_points
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -51,19 +52,29 @@ def get_transformation_data():
         data['error'] = 0
         # Computing eruption flow data
         fcomplex.create_triangulation()
+        ftess = FlagTesselator(fcomplex, steps=5)
         if n == 3:
             triangle = fcomplex.triangles[0]
-            data['erupt'] = compute_eruption_data(fcomplex, triangle)
+            data['erupt'] = compute_eruption_data(fcomplex, ftess, triangle)
             app.logger.info("Computed eruption flow data.")
         if n == 4:
             quad = [0, 1, 2, 3]
             data['ellipse'] = compute_ellipse(fcomplex)
             app.logger.info("Computed ellipse.")
             fcomplex1 = copy.deepcopy(fcomplex)
-            data['shear'] = compute_shear_data(fcomplex1, quad)
-            app.logger.info("Computed shear flow data.")
-            data['bulge'] = compute_bulge_data(fcomplex, quad)
-            app.logger.info("Computed bulge flow data.")
+            ftess1 = FlagTesselator(fcomplex1, steps=5)
+            app.logger.info("Computing shear flow data...")
+            data['shear'] = compute_shear_data(fcomplex1, ftess1, quad)
+            app.logger.info("Success!")
+            app.logger.info("Computing bulge flow data...")
+            data['bulge'] = compute_bulge_data(fcomplex, ftess, quad)
+            app.logger.info("Success!")
+        if n > 4:
+            initial_poly, hull, tiles = ftess.generate_tesselation()
+
+            hull = rescale_existing_points(len(hull), hull)
+            data['no_trafo'][0] = hull
+
 
         app.logger.info("All data successfully computed!")
 
