@@ -35,9 +35,13 @@
                         <input type="checkbox" name="withMiddle" autocomplete="off"/>
                         Middle Triangle
                     </label>
-                    <label>
+                    <label style="display:none" id="input-withhelper">
                         <input type="checkbox" name="withHelper" autocomplete="off"/>
                         Helper Lines
+                    </label>
+                    <label style="display:none" id="input-withellipse">
+                        <input type="checkbox" name="withEllipse" autocomplete="off"/>
+                        Ellipses
                     </label>
                 </div>
                 <div style="display:none" id="div-select-trafo">
@@ -103,12 +107,12 @@
         var ui_elements =
             {
                 "all_elements": ['button-addflag', 'div-checkstriangle', 'div-trafo',
-                    'div-select-trafo', 'form-pplane', 'option-trafoerupt'],
+                    'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withhelper', 'input-withellipse'],
                 "show_for_all_n": ['button-addflag', 'form-pplane'],
                 "3":
-                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'option-trafoerupt'],
+                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'option-trafoerupt', 'input-withhelper'],
                 "4":
-                    ['div-trafo', 'div-select-trafo', 'option-trafobulge', 'option-trafoshear']
+                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'option-trafobulge', 'option-trafoshear']
             };
 
         /*
@@ -172,6 +176,10 @@
             "bulge": null,
             "shear": null
         };
+
+        var ellipse = null;
+
+
         /*
          * Different types of transformations: "erupt", "bulge" and "shear".
          */
@@ -237,36 +245,65 @@
             qs_2dim = trafo_data[trafo_type][t_str]["qs"];
             ds_2dim = qs_2dim;
             us_2dim = trafo_data[trafo_type][t_str]["us"];
-            refresh_svg(false);        };
+            if(trafo_type === 'shear'){
+                document.getElementById('input-withellipse').style.display = "block";
+            }
+            else{
+                document.getElementById('input-withellipse').style.display = "none";
+                svg.selectAll("#ellipse").remove();
+            }
+            refresh_svg(false);
+        };
 
         // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
         $('input[name=withInner]').change(function () {
+            console.log(us_2dim);
             if ($(this).is(':checked')) {
-                draw_points(us_2dim, "u_point", FLAVOR_COLOR_1, triangle_layer);
-                draw_triangle(us_2dim, "u_line", FLAVOR_COLOR_1, triangle_layer);
+                for(let i = 0; i < us_2dim.length; i++) {
+                    console.log(i);
+                    console.log("us_2dim[i]");
+                    console.log(us_2dim[i]);
+                    draw_points(us_2dim[i], "u_point"+i.toString(), FLAVOR_COLOR_1, triangle_layer);
+                    draw_triangle(us_2dim[i], "u_line"+i.toString(), FLAVOR_COLOR_1, triangle_layer);
+                }
             } else {
-                svg.selectAll("#u_point").remove();
-                svg.selectAll("#u_line").remove();
+                for(let i= 0; i < us_2dim.length; i++) {
+                svg.selectAll("#u_point"+i.toString()).remove();
+                svg.selectAll("#u_line"+i.toString()).remove();}
             }
         });
 
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
         $('input[name=withMiddle]').change(function () {
             if ($(this).is(':checked')) {
+                for(let i= 1; i < n-1; i++) {
+                    var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i+1]];
+                    draw_triangle(points, "p_line"+(i-1).toString(), FLAVOR_COLOR_2, triangle_layer);
+                }
                 draw_points(ps_2dim, "p_point", FLAVOR_COLOR_2, triangle_layer);
-                draw_triangle(ps_2dim, "p_line", FLAVOR_COLOR_2, triangle_layer);
             } else {
                 svg.selectAll("#p_point").remove();
-                svg.selectAll("#p_line").remove();
+                for(let i= 1; i < n-1; i++) {
+                    svg.selectAll("#p_line"+(i-1).toString()).remove();
+                }
             }
         });
 
         // Checkbox for the helper lines. Check for showing, uncheck for removing.
         $('input[name=withHelper]').change(function () {
             if ($(this).is(':checked')) {
-                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", FLAVOR_COLOR_3, background_layer)
+                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", FLAVOR_COLOR_3, background_layer);
             } else {
                 svg.selectAll("#helper_line").remove();
+            }
+        });
+
+        // Checkbox for the helper lines. Check for showing, uncheck for removing.
+        $('input[name=withEllipse]').change(function () {
+            if ($(this).is(':checked')) {
+                draw_triangle(ellipse, "ellipse", FLAVOR_COLOR_3, background_layer);
+            } else {
+                svg.selectAll("#ellipse").remove();
             }
         });
 

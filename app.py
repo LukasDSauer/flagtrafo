@@ -3,7 +3,7 @@ from flask_json import FlaskJSON
 from flagcomplex import FlagComplex
 import copy
 from services.flagcomplex_interface import init_flagcomplex_from_data,\
-    compute_eruption_data, compute_shear_data, compute_bulge_data
+    compute_eruption_data, compute_shear_data, compute_bulge_data, compute_ellipse
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -57,6 +57,8 @@ def get_transformation_data():
             app.logger.info("Computed eruption flow data.")
         if n == 4:
             quad = [0, 1, 2, 3]
+            data['ellipse'] = compute_ellipse(fcomplex)
+            app.logger.info("Computed ellipse.")
             fcomplex1 = copy.deepcopy(fcomplex)
             data['shear'] = compute_shear_data(fcomplex1, quad)
             app.logger.info("Computed shear flow data.")

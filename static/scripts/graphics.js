@@ -21,8 +21,9 @@ function switch_program_mode_to(mode) {
         }
     }
     if (mode === "addFlags") {
-        svg.selectAll("#u_point").remove();
-        svg.selectAll("#u_line").remove();
+        for(let i= 0; i < us_2dim.length; i++) {
+        svg.selectAll("#u_point"+i.toString()).remove();
+        svg.selectAll("#u_line"+i.toString()).remove();}
         svg.selectAll("#p_point").remove();
         svg.selectAll("#p_line").remove();
         svg.selectAll("#helper_line").remove();
@@ -141,6 +142,9 @@ function submit_projection_plane_button() {
  */
 function submit_flags_to_server(with_refresh) {
     hide_editing_elements();
+    // Switch off mouse events during loading.
+    svg.on("mousemove", null);
+    svg.on("click", null);
     show_loader();
 
     svg.selectAll("#newpoint").remove();
@@ -180,6 +184,7 @@ function submit_flags_to_server(with_refresh) {
                     trafo_data[trafo_type] = data["shear"];
                     trafo_data["bulge"] = data["bulge"];
                     select_trafo.value = "shear";
+                    ellipse = data["ellipse"];
                 }
 
                 ps_2dim = trafo_data[trafo_type][t_str]["ps"];
@@ -209,11 +214,14 @@ function submit_flags_to_server(with_refresh) {
 function refresh_svg() {
     update_points(ps_2dim, "point");
     update_points(ps_2dim, "p_point");
-    if (n===3){
-        update_points(us_2dim, "u_point");
-        update_triangle(us_2dim, "u_line");
+    for(let i= 0; i < us_2dim.length; i++) {
+        update_points(us_2dim[i], "u_point"+i.toString());
+        update_triangle(us_2dim[i], "u_line"+i.toString());
     }
-    update_triangle(ps_2dim, "p_line");
+    for(let i= 1; i < n-1; i++) {
+        var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i+1]];
+        update_triangle(points, "p_line"+(i-1).toString());
+    }
     update_helper_lines(ps_2dim, qs_2dim, "helper_line");
     update_infinite_lines(ps_2dim, ds_2dim, "line");
 }
@@ -295,14 +303,14 @@ function draw_points(data, id, color, layer) {
  * @param color: a color string specifying the object's color
  */
 function draw_triangle(data, id, color, layer) {
-    for (var i = 0; data.length - 1; i++) {
+    for (let i = 0; i<data.length; i++) {
         layer.append("line")
             .attr("id", id)
             .style('stroke', color)
             .attr("x1", data[i][0])
             .attr("y1", data[i][1])
-            .attr("x2", data[(i + 1) % 3][0])
-            .attr("y2", data[(i + 1) % 3][1]);
+            .attr("x2", data[(i + 1) % data.length][0])
+            .attr("y2", data[(i + 1) % data.length][1]);
     }
 }
 
@@ -454,6 +462,7 @@ function show_editing_elements() {
     }
     if(n === 4){
         select_trafo.options[select_trafo.selectedIndex].value = "shear";
+        document.getElementById('input-withellipse').style.display = "block";
     }
 }
 

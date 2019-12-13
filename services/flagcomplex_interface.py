@@ -21,7 +21,8 @@ def init_flagcomplex_from_data(n, data, pplane, old_pplane):
             # direction[:] = [x/100 for x in direction]
             # direction.append(1)
             direction.append(100)
-            fcomplex.add_flag(p, direction)
+            # As we are using the qualities of numpy arrays internally at some points, we can't hand over a mere list.
+            fcomplex.add_flag(np.array(p), np.array(direction))
 
     else:
         for i in range(n):
@@ -50,7 +51,7 @@ def compute_eruption_data(fcomplex, triangle):
         drawqs = rescale_existing_points(3, fcomplex.drawqs)
         drawus = rescale_existing_points(3, fc_drawus)
 
-        data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
+        data[t] = {"ps": drawps, "qs": drawqs, "us": [drawus]}
 
     return data
 
@@ -63,14 +64,20 @@ def compute_shear_data(fcomplex, quad):
         fcomplex.shear_quadrilateral(t=0.01, quad=quad)
         fcomplex.draw_complex()
 
-        fc_drawus = fcomplex.get_projected_us()
+
 
         drawps = rescale_existing_points(4, fcomplex.drawps)
         drawqs = rescale_existing_points(4, fcomplex.drawqs)
-        drawus = rescale_existing_points(3, fc_drawus)
+
+        triangle0 = [0, 1, 2]
+        triangle1 = [0, 2, 3]
+        fc_drawus0 = fcomplex.get_projected_us(triangle0)
+        fc_drawus1 = fcomplex.get_projected_us(triangle1)
+        drawus0 = rescale_existing_points(3, fc_drawus0)
+        drawus1 = rescale_existing_points(3, fc_drawus1)
 
 
-        data[t] = {"ps": drawps, "qs": drawqs}
+        data[t] = {"ps": drawps, "qs": drawqs, "us": [drawus0, drawus1]}
 
     return data
 
@@ -80,13 +87,20 @@ def compute_bulge_data(fcomplex, quad):
     fcomplex.bulge_quadrilateral(t=-10.01, quad=quad)
     for i in range(2001):
         t = -1000 + i
+
         fcomplex.bulge_quadrilateral(t=0.01, quad=quad)
         fcomplex.draw_complex()
-
         drawps = rescale_existing_points(4, fcomplex.drawps)
         drawqs = rescale_existing_points(4, fcomplex.drawqs)
 
-        data[t] = {"ps": drawps, "qs": drawqs}
+        triangle0 = [0, 1, 2]
+        triangle1 = [0, 2, 3]
+        fc_drawus0 = fcomplex.get_projected_us(triangle0)
+        fc_drawus1 = fcomplex.get_projected_us(triangle1)
+        drawus0 = rescale_existing_points(3, fc_drawus0)
+        drawus1 = rescale_existing_points(3, fc_drawus1)
+
+        data[t] = {"ps": drawps, "qs": drawqs, "us": [drawus0, drawus1]}
 
     return data
 
@@ -108,3 +122,13 @@ def rescale_existing_points(n, points):
         else:
             points_r.append(None)
     return points_r
+
+def compute_ellipse(fcomplex):
+    flag1 = fcomplex.get_flag(0)
+    flag2 = fcomplex.get_flag(2)
+    point = fcomplex.ps[1]
+    ellipse = fcomplex.get_conic_through_flags_and_point(flag1, flag2, point, resolution=32)
+
+    ellipse = [100*fcomplex.get_two_dimensional_point(p) for p in ellipse]
+
+    return ellipse
