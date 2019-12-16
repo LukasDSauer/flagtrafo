@@ -139,6 +139,25 @@ function submit_projection_plane_button() {
     }
 }
 
+function transform_coordinates(){
+    t_str = t.toString();
+    // Round to two decimals (value between -10.01 and
+    document.getElementById("trafovalue").innerHTML =
+                Math.round((t * 10 / trafo_range + 0.00001) * trafo_range / 10) * 10 / trafo_range;
+    // Update the current coordinates of the ps, qs and us.
+    refresh_coordinates();
+    refresh_svg(false);
+}
+
+function refresh_coordinates(){
+    ps_2dim = trafo_data[trafo_type][t_str]["ps"];
+    qs_2dim = trafo_data[trafo_type][t_str]["qs"];// From now on, we can use the qs for the ds, as they simply are another point on the line,
+    // and this is all that we need.
+    ds_2dim = qs_2dim;
+    us_2dim = trafo_data[trafo_type][t_str]["us"];
+    convex = trafo_data[trafo_type][t_str]["convex"];
+}
+
 /*
  * Functions for interaction with the server.
  */
@@ -188,11 +207,12 @@ function submit_flags_to_server(with_refresh) {
                     trafo_data[trafo_type] = data["erupt"];
                 }
                 if (n === 4) {
-                    trafo_type = "shear";
+                    trafo_type = "eruptmp";
                     select_trafo.value = "shear";
 
                     trafo_data["shear"] = data["shear"];
                     trafo_data["bulge"] = data["bulge"];
+                    trafo_data["eruptmp"] = data["eruptmp"];
                     ellipse = data["ellipse"];
                 }
                 if (n > 4){
@@ -201,15 +221,8 @@ function submit_flags_to_server(with_refresh) {
                     trafo_type= "no_trafo";
                     trafo_data["no_trafo"] = data["no_trafo"];
                 }
-                ps_2dim = trafo_data[trafo_type][t_str]["ps"];
-                qs_2dim = trafo_data[trafo_type][t_str]["qs"];
-                ds_2dim = trafo_data[trafo_type][t_str]["qs"];
-                us_2dim = trafo_data[trafo_type][t_str]["us"];
-                // From now on, we can use the qs for the ds, as they simply are another point on the line,
-                // and this is all that we need.
-                convex = trafo_data[trafo_type][t_str]["convex"];
 
-
+                refresh_coordinates();
                 if (with_refresh) {
                     refresh_svg();
                 }

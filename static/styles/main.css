@@ -100,20 +100,21 @@
     .slider {
         -webkit-appearance: none;
         width: 50%;
-        height: 10px;
+        height: 1.1rem;
         border-radius: 5px;
         background: #DDDDDD;
         outline: none;
         opacity: 1.0;
         -webkit-transition: .2s;
         transition: opacity .2s;
+        vertical-align: -1.45rem;
     }
 
     .slider::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        width: 15px;
-        height: 15px;
+        width: 1.5rem;
+        height: 1.5rem;
         border-radius: 100%;
         background: var(--main-highlight-color, black);
         border-color: var(--main-highlight-color, black);
@@ -121,8 +122,8 @@
     }
 
     .slider::-moz-range-thumb {
-        width: 15px;
-        height: 15px;
+        width: 1.5rem;
+        height: 1.5rem;
         border-radius: 100%;
         background: var(--main-highlight-color, black);
         border-color: var(--main-highlight-color, black);

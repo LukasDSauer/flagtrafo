@@ -4,7 +4,7 @@ from flagcomplex import FlagComplex, FlagTesselator
 import copy
 from services.flagcomplex_interface import init_flagcomplex_from_data,\
     compute_eruption_data, compute_shear_data, compute_bulge_data, compute_ellipse,\
-    rescale_existing_points, compute_no_trafo_data
+    rescale_existing_points, compute_no_trafo_data, compute_eruption_data_minus_plus
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -56,19 +56,22 @@ def get_transformation_data():
         ftess = FlagTesselator(fcomplex, steps=tesselation_steps)
         if n == 3:
             triangle = fcomplex.triangles[0]
-            data['erupt'] = compute_eruption_data(fcomplex, ftess, triangle)
+            data['erupt'] = compute_eruption_data(fcomplex, ftess)
             app.logger.info("Computed eruption flow data.")
         if n == 4:
-            quad = [0, 1, 2, 3]
-            data['ellipse'] = compute_ellipse(fcomplex)
-            app.logger.info("Computed ellipse.")
-            fcomplex1 = copy.deepcopy(fcomplex)
-            ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
-            app.logger.info("Computing shear flow data...")
-            data['shear'] = compute_shear_data(fcomplex1, ftess1, quad)
-            app.logger.info("Success!")
-            app.logger.info("Computing bulge flow data...")
-            data['bulge'] = compute_bulge_data(fcomplex, ftess, quad)
+        #     data['ellipse'] = compute_ellipse(fcomplex)
+        #     app.logger.info("Computed ellipse.")
+        #     fcomplex1 = copy.deepcopy(fcomplex)
+        #     ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
+        #     app.logger.info("Computing shear flow data...")
+        #     data['shear'] = compute_shear_data(fcomplex1, ftess1)
+        #     app.logger.info("Success!")
+        #     fcomplex1 = copy.deepcopy(fcomplex)
+        #     app.logger.info("Computing bulge flow data...")
+        #     data['bulge'] = compute_bulge_data(fcomplex1, ftess1)
+        #     app.logger.info("Success!")
+            app.logger.info("Computing eruption flow data (-/+)...")
+            data['eruptmp'] = compute_eruption_data_minus_plus(fcomplex, ftess)
             app.logger.info("Success!")
         if n > 4:
             data['no_trafo'] = compute_no_trafo_data(fcomplex, ftess)

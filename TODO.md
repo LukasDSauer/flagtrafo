@@ -22,6 +22,10 @@
 
 * Problem: Shear flow is an option for n=3.
 
+* Is it okay to use var for my variables?
+
+* Include external libraries.
+
 
 ## Ansible install:
 

@@ -1,6 +1,8 @@
 import numpy as np
+import copy
 from flagcomplex import FlagComplex
 from flagcomplex.EuklGeometryUtility import rotate_vectors
+from flagcomplex.ProjGeometryUtility import transform_four_points
 
 trafo_range = 100
 trafo_range_real = trafo_range*2+1  # n values on the minus side, n values on the plus side, and 0.
@@ -46,74 +48,86 @@ def init_flagcomplex_from_data(n, data, pplane, old_pplane):
     return fcomplex
 
 
+def compute_eruption_data(fcomplex, ftess):
+    triangle = fcomplex.triangles[0]  # This is equal [0, 1, 2].
+    args = {"triangle": triangle, "transformation_style": "Q"}
 
-def compute_eruption_data(fcomplex, ftess, triangle):
-    data = dict()
-    fcomplex.erupt_triangle(t=t_offset, triangle=triangle, transformation_style="Q")
-    for i in range(trafo_range_real):
-        t = -trafo_range + i
-        fcomplex.erupt_triangle(t=t_step, triangle=triangle, transformation_style="Q")
-        fcomplex.draw_complex()
-        fc_drawus = fcomplex.get_projected_us(triangle)
+    return compute_trafo_data(fcomplex, ftess, fcomplex.erupt_triangle, args)
 
-        drawps = rescale_existing_points(fcomplex.drawps)
-        drawqs = rescale_existing_points(fcomplex.drawqs)
-        drawus = rescale_existing_points(fc_drawus)
 
-        initial_poly, hull, tiles = ftess.generate_tesselation()
-        hull = rescale_existing_points(hull)
+def compute_shear_data(fcomplex, ftess):
+    quad = [0, 1, 2, 3]
+    args = {"quad": quad}
+    return compute_trafo_data(fcomplex, ftess, fcomplex.shear_quadrilateral, args)
 
-        data[t] = {"ps": drawps, "qs": drawqs, "us": [drawus], "convex": hull}
 
-    return data
+def compute_bulge_data(fcomplex, ftess):
+    quad = [0, 1, 2, 3]
+    args = {"quad": quad}
+    return compute_trafo_data(fcomplex, ftess, fcomplex.bulge_quadrilateral, args)
 
-def compute_shear_data(fcomplex, ftess, quad):
+
+def compute_eruption_data_minus_plus(fcomplex, ftess):
     data = dict()
 
-    fcomplex.shear_quadrilateral(t=t_offset, quad=quad)
+    style = "Q"
+
+    triangle0 = [1, 2, 0]
+    triangle1 = [2, 3, 0]
+    fcomplex.refresh_setup()
+    other_points = copy.deepcopy(fcomplex.qs)
+
+    fcomplex.set_subdivision([2, 3, 0], {2: [0], 3: [2, 1], 0: [3]})
+    fcomplex.set_subdivision([1, 2, 0], {1: [0, 3], 2: [1], 0: [2]})
+
+    fcomplex.erupt_complex_along_triangle(t=-t_offset, triangle=triangle0, transformation_style=style)
+    fcomplex.erupt_complex_along_triangle(t=+t_offset, triangle=triangle1, transformation_style=style)
+
     for i in range(trafo_range_real):
-        t = -trafo_range + i
-        fcomplex.shear_quadrilateral(t=t_step, quad=quad)
+        fcomplex.erupt_complex_along_triangle(t=+t_step, triangle=triangle1, transformation_style=style)
+        fcomplex.erupt_complex_along_triangle(t=-t_step, triangle=triangle0, transformation_style=style)
+        fcomplex.projective_transformation = transform_four_points(fcomplex.qs, [other_points[i - 1] for i in range(4)])
+
         fcomplex.draw_complex()
-        drawps = rescale_existing_points(fcomplex.drawps)
-        drawqs = rescale_existing_points(fcomplex.drawqs)
 
-        triangle0 = [0, 1, 2]
-        triangle1 = [0, 2, 3]
-        fc_drawus0 = fcomplex.get_projected_us(triangle0)
-        fc_drawus1 = fcomplex.get_projected_us(triangle1)
-        drawus0 = rescale_existing_points(fc_drawus0)
-        drawus1 = rescale_existing_points(fc_drawus1)
-
-        initial_poly, hull, tiles = ftess.generate_tesselation()
-        hull = rescale_existing_points(hull)
-
-        data[t] = {"ps": drawps, "qs": drawqs, "us": [drawus0, drawus1], "convex": hull}
-
-    return data
-
-
-def compute_bulge_data(fcomplex, ftess, quad):
-    data = dict()
-
-    fcomplex.bulge_quadrilateral(t=t_offset, quad=quad)
-    for i in range(trafo_range_real):
-        t = -trafo_range + i
-
-        fcomplex.bulge_quadrilateral(t=t_step, quad=quad)
-        fcomplex.draw_complex()
-        drawps = rescale_existing_points(fcomplex.drawps)
-        drawqs = rescale_existing_points(fcomplex.drawqs)
         drawus = []
-
         for triangle in fcomplex.triangles:
             fc_drawus = fcomplex.get_projected_us(triangle)
             drawus.append(rescale_existing_points(fc_drawus))
 
-        initial_poly, hull, tiles = ftess.generate_tesselation()
+        drawps = rescale_existing_points(fcomplex.drawps)
+        drawqs = rescale_existing_points(fcomplex.drawqs)
 
+        initial_poly, hull, tiles = ftess.generate_tesselation()
         hull = rescale_existing_points(hull)
 
+        t = -trafo_range + i
+        data[t] = {"ps": drawps, "qs": drawqs, "us": drawus, "convex": hull}
+
+    return data
+
+
+def compute_trafo_data(fcomplex, ftess, ftrafo, args):
+    data = dict()
+
+    ftrafo(t=t_offset, **args)
+
+    for i in range(trafo_range_real):
+        ftrafo(t=t_step, **args)
+        fcomplex.draw_complex()
+
+        drawus = []
+        for triangle in fcomplex.triangles:
+            fc_drawus = fcomplex.get_projected_us(triangle)
+            drawus.append(rescale_existing_points(fc_drawus))
+
+        drawps = rescale_existing_points(fcomplex.drawps)
+        drawqs = rescale_existing_points(fcomplex.drawqs)
+
+        initial_poly, hull, tiles = ftess.generate_tesselation()
+        hull = rescale_existing_points(hull)
+
+        t = -trafo_range + i
         data[t] = {"ps": drawps, "qs": drawqs, "us": drawus, "convex": hull}
 
     return data

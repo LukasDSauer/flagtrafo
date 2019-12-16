@@ -52,6 +52,8 @@
                     <label>Trafo type
                         <select id="select-trafo">
                             <option id="option-trafoerupt" value="erupt" style="display:none">Eruption flow</option>
+                            <option id="option-trafoeruptmp" value="eruptmp" style="display:none">Eruption flow (-/+)</option>
+                            <option id="option-trafoeruptpp" value="eruptpp" style="display:none">Eruption flow (+/+)</option>
                             <option id="option-trafobulge" value="bulge" style="display:none">Bulge flow</option>
                             <option id="option-trafoshear" value="shear" style="display:none">Shear flow</option>
                         </select>
@@ -81,9 +83,9 @@
             <div class="column column-50" id="div-trafo" style="display:none">
                 <label>Transformation value: <span id="trafovalue">0</span>
                 </label>
-                <div class="slidecontainer">
-                    <input type="range" min="-1000" max="1000" value="0" class="slider" id="range-trafo"/>
-                </div>
+                <input type="range" min="-1000" max="1000" value="0" class="slider" id="range-trafo"/>
+                <input class="button-primary" type="button" value="Reset" id="button-traforeset">
+
             </div>
         </section>
     </section>
@@ -127,7 +129,8 @@
                     'input-withhelper'],
                 "4":
                     ['div-trafo', 'div-select-trafo', 'option-trafobulge', 'option-trafoshear',
-                        'input-withinner', 'input-withellipse']
+                        'input-withinner', 'input-withellipse', 'option-trafoeruptmp', 'option-trafoeruptpp'
+                    ]
             };
 
         /*
@@ -205,7 +208,7 @@
         var trafo_type = "";
 
         // Width and height of the SVG object.
-        var width = Math.min(2000, document.getElementById("div-canvas").offsetWidth - 100);
+        var width = Math.min(2000, document.getElementById("div-canvas").offsetWidth);
         var height = Math.min(2000, innerHeight - 200);
 
         // SVG object for data visualization, using D3.js
@@ -240,34 +243,28 @@
             });
         });
 
+        // The "Reset transformation" button
+        $(document).ready(function () {
+            $("#button-traforeset").click(function () {
+                t = 0;
+                document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value
+                transform_coordinates();
+            });
+        });
+
         // The slider for transformation
         var slider = document.getElementById("range-trafo");
-        document.getElementById("trafovalue").innerHTML = 0; // Display the default slider value
+        document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value
         slider.oninput = function () {
-            // Round to two decimals (value between -10.01 and
-            document.getElementById("trafovalue").innerHTML =
-                Math.round((this.value * 10 / trafo_range + 0.00001) * trafo_range / 10) * 10 / trafo_range;
-
             t = this.value;
-            t_str = t.toString();
-            // Update the current coordinates of the ps, qs and us.
-            ps_2dim = trafo_data[trafo_type][t_str]["ps"];
-            qs_2dim = trafo_data[trafo_type][t_str]["qs"];
-            ds_2dim = qs_2dim;
-            us_2dim = trafo_data[trafo_type][t_str]["us"];
-            convex = trafo_data[trafo_type][t_str]["convex"];
-            refresh_svg(false);
+            transform_coordinates();
         };
 
         // The dropdown menu for transformation type
         var select_trafo = document.getElementById("select-trafo");
         select_trafo.onchange = function () {
             trafo_type = select_trafo.options[select_trafo.selectedIndex].value;
-            ps_2dim = trafo_data[trafo_type][t_str]["ps"];
-            qs_2dim = trafo_data[trafo_type][t_str]["qs"];
-            ds_2dim = qs_2dim;
-            us_2dim = trafo_data[trafo_type][t_str]["us"];
-            convex = trafo_data[trafo_type][t_str]["convex"];
+            refresh_coordinates();
             if (trafo_type === 'shear') {
                 document.getElementById('input-withellipse').style.display = "block";
             } else {
