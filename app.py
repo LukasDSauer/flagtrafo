@@ -4,7 +4,7 @@ from flagcomplex import FlagComplex, FlagTesselator
 import copy
 from services.flagcomplex_interface import init_flagcomplex_from_data,\
     compute_eruption_data, compute_shear_data, compute_bulge_data, compute_ellipse,\
-    rescale_existing_points
+    rescale_existing_points, compute_no_trafo_data
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -39,6 +39,7 @@ def get_transformation_data():
     pplane = data["pplane"]
     old_pplane = data["oldpplane"]
     n = len(data['ps'])
+    tesselation_steps = 3
 
     fcomplex = init_flagcomplex_from_data(n, data, pplane, old_pplane)
     app.logger.info("Initialized flag complex with " + str(n) + " flags and projection plane " + str(pplane) + ".")
@@ -52,7 +53,7 @@ def get_transformation_data():
         data['error'] = 0
         # Computing eruption flow data
         fcomplex.create_triangulation()
-        ftess = FlagTesselator(fcomplex, steps=5)
+        ftess = FlagTesselator(fcomplex, steps=tesselation_steps)
         if n == 3:
             triangle = fcomplex.triangles[0]
             data['erupt'] = compute_eruption_data(fcomplex, ftess, triangle)
@@ -62,7 +63,7 @@ def get_transformation_data():
             data['ellipse'] = compute_ellipse(fcomplex)
             app.logger.info("Computed ellipse.")
             fcomplex1 = copy.deepcopy(fcomplex)
-            ftess1 = FlagTesselator(fcomplex1, steps=5)
+            ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
             app.logger.info("Computing shear flow data...")
             data['shear'] = compute_shear_data(fcomplex1, ftess1, quad)
             app.logger.info("Success!")
@@ -70,10 +71,7 @@ def get_transformation_data():
             data['bulge'] = compute_bulge_data(fcomplex, ftess, quad)
             app.logger.info("Success!")
         if n > 4:
-            initial_poly, hull, tiles = ftess.generate_tesselation()
-
-            hull = rescale_existing_points(len(hull), hull)
-            data['no_trafo'][0] = hull
+            data['no_trafo'] = compute_no_trafo_data(fcomplex, ftess)
 
 
         app.logger.info("All data successfully computed!")

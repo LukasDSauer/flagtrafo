@@ -21,14 +21,18 @@ function switch_program_mode_to(mode) {
         }
     }
     if (mode === "addFlags") {
+        if(us_2dim != null){
+
+
         for (let i = 0; i < us_2dim.length; i++) {
             svg.selectAll("#u_point" + i.toString()).remove();
             svg.selectAll("#u_line" + i.toString()).remove();
-        }
-        for (let i = 1; i < n - 1; i++) {
-            svg.selectAll("#p_point" + i.toString()).remove();
+        }}
+        for (let i = 0; i < n - 1; i++) {
             svg.selectAll("#p_line" + i.toString()).remove();
         }
+        svg.selectAll("#p_point").remove();
+
         svg.selectAll("#helper_line").remove();
         svg.selectAll("#convex").remove();
         svg.selectAll("#ellipse").remove();
@@ -36,6 +40,8 @@ function switch_program_mode_to(mode) {
         hide_editing_elements();
         document.getElementById("button-addflag").style.display = "block";
         document.getElementById('button-addflag').value = "Finish";
+        svg.on("mousemove", mouse_move_point_or_line)
+            .on("click", mouse_click_point_or_line);
         switch_program_mode_to("addPoints");
     }
     if (mode === "addPoints") {
@@ -61,8 +67,6 @@ function submit_flags_button() {
         }
     } else if (program_mode === "standard") {
         switch_program_mode_to("addFlags");
-        svg.on("mousemove", mouse_move_point_or_line)
-            .on("click", mouse_click_point_or_line);
     }
 }
 
@@ -74,7 +78,6 @@ function mouse_move_point_or_line() {
     liveCoordinates = d3.mouse(this);
 
     if (program_mode === "addPoints") {
-        //TODO.md: Change this to drawPoints, we don't need the extra function.
         draw_points([liveCoordinates], "newpoint", NEW_HIGHLIGHT_COLOR, flag_layer);
     } else if (program_mode === "addLines") {
         draw_infinite_lines([fixedCoordinates], [liveCoordinates], "newline", NEW_HIGHLIGHT_COLOR, flag_layer);
@@ -101,8 +104,8 @@ function mouse_click_point_or_line() {
                 .style('fill', '#393939')
                 .attr("id", "point");
 
-            ps_2dim[n] = fixedCoordinates;
-            ds_2dim[n] = liveCoordinates;
+            ps_2dim.push(fixedCoordinates);
+            ds_2dim.push(liveCoordinates);
             n++;
             switch_program_mode_to("addPoints");
         } else {
@@ -186,22 +189,24 @@ function submit_flags_to_server(with_refresh) {
                 }
                 if (n === 4) {
                     trafo_type = "shear";
-                    trafo_data[trafo_type] = data["shear"];
-                    trafo_data["bulge"] = data["bulge"];
                     select_trafo.value = "shear";
+
+                    trafo_data["shear"] = data["shear"];
+                    trafo_data["bulge"] = data["bulge"];
                     ellipse = data["ellipse"];
                 }
                 if (n > 4){
+                    t = 0;
+                    t_str = "0";
                     trafo_type= "no_trafo";
-                    trafo_data[trafo_type] = data["shear"];
+                    trafo_data["no_trafo"] = data["no_trafo"];
                 }
-
                 ps_2dim = trafo_data[trafo_type][t_str]["ps"];
                 qs_2dim = trafo_data[trafo_type][t_str]["qs"];
-                // From now on, we can use the qs for the ds, as they simply are another point on the line,
-                // and this is all that we need.
                 ds_2dim = trafo_data[trafo_type][t_str]["qs"];
                 us_2dim = trafo_data[trafo_type][t_str]["us"];
+                // From now on, we can use the qs for the ds, as they simply are another point on the line,
+                // and this is all that we need.
                 convex = trafo_data[trafo_type][t_str]["convex"];
 
 
@@ -334,7 +339,7 @@ function draw_triangle(data, id, color, layer) {
  * @param id: an id string for identifying the lines later
  * @param color: a color string specifying the object's color
  */
-function draw_helper_lines(data_mibddle, data_outer, id, color, layer) {
+function draw_helper_lines(data_middle, data_outer, id, color, layer) {
     for (var i = 0; data_middle.length - 1; i++) {
         layer.append("line")
             .attr("id", id)

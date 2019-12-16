@@ -27,11 +27,11 @@
                     </fieldset>
                 </form>
                 <div style="display:none" id="div-checkstriangle">
-                    <label>
+                    <label id="input-withinner">
                         <input type="checkbox" name="withInner" autocomplete="off"/>
                         Inner triangle
                     </label>
-                    <label>
+                    <label id="input-withmiddle">
                         <input type="checkbox" name="withMiddle" autocomplete="off"/>
                         Middle Triangle
                     </label>
@@ -50,10 +50,10 @@
                 </div>
                 <div style="display:none" id="div-select-trafo">
                     <label>Trafo type
-                        <select id = "select-trafo">
+                        <select id="select-trafo">
                             <option id="option-trafoerupt" value="erupt" style="display:none">Eruption flow</option>
                             <option id="option-trafobulge" value="bulge" style="display:none">Bulge flow</option>
-                            <option id = "option-trafoshear" value="shear" style="display:none">Shear flow</option>
+                            <option id="option-trafoshear" value="shear" style="display:none">Shear flow</option>
                         </select>
                     </label>
                 </div>
@@ -93,7 +93,7 @@
         /**
          * Fixed variables
          */
-        // Access to all the CSS style modifications of the HTML document.
+            // Access to all the CSS style modifications of the HTML document.
         var style = window.getComputedStyle(document.body);
 
         //The numbers of flags for which there is some kind of interaction with the server.
@@ -104,9 +104,7 @@
         var trafo_range = 100;
 
         document.getElementById("range-trafo").max = trafo_range;
-        document.getElementById("range-trafo").min = - trafo_range;
-
-
+        document.getElementById("range-trafo").min = -trafo_range;
 
 
         /*
@@ -119,13 +117,17 @@
         var ui_elements =
             {
                 "all_elements": ['button-addflag', 'div-checkstriangle', 'div-trafo',
-                    'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withhelper', 'input-withellipse',
-                'input-withconvex'],
-                "show_for_all_n": ['button-addflag', 'form-pplane', 'input-withconvex'],
+                    'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withinner',
+                    'input-withmiddle', 'input-withhelper', 'input-withellipse',
+                    'input-withconvex'],
+                "show_for_all_n": ['button-addflag', 'form-pplane', 'input-withconvex',
+                    'input-withinner', 'input-withmiddle', 'div-checkstriangle'],
                 "3":
-                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'option-trafoerupt', 'input-withhelper'],
+                    ['div-trafo', 'div-select-trafo', 'option-trafoerupt', 'input-withinner',
+                    'input-withhelper'],
                 "4":
-                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'option-trafobulge', 'option-trafoshear']
+                    ['div-trafo', 'div-select-trafo', 'option-trafobulge', 'option-trafoshear',
+                        'input-withinner', 'input-withellipse']
             };
 
         /*
@@ -134,8 +136,8 @@
          */
         var error_codes =
             ["No error",//0
-             "Error: The tuple of flags is not positive. This means that the inner polygon is not nested" +
-            " inside the outer polygon."//1
+                "Error: The tuple of flags is not positive. This means that the inner polygon is not nested" +
+                " inside the outer polygon."//1
             ];
         // @type {string} The color of a new geometric object hovering before being added.
         var NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
@@ -211,7 +213,7 @@
             .attr("width", width)
             .attr("height", height)
             .style("background-color", "#DDDDDD");
-        
+
         // The SVG listens to mouse movements and mouse clicks 
         svg.on("mousemove", mouse_move_point_or_line)
             .on("click", mouse_click_point_or_line);
@@ -244,7 +246,7 @@
         slider.oninput = function () {
             // Round to two decimals (value between -10.01 and
             document.getElementById("trafovalue").innerHTML =
-                Math.round((this.value * 10 / trafo_range + 0.00001) * trafo_range/10) *10/trafo_range;
+                Math.round((this.value * 10 / trafo_range + 0.00001) * trafo_range / 10) * 10 / trafo_range;
 
             t = this.value;
             t_str = t.toString();
@@ -266,10 +268,9 @@
             ds_2dim = qs_2dim;
             us_2dim = trafo_data[trafo_type][t_str]["us"];
             convex = trafo_data[trafo_type][t_str]["convex"];
-            if(trafo_type === 'shear'){
+            if (trafo_type === 'shear') {
                 document.getElementById('input-withellipse').style.display = "block";
-            }
-            else{
+            } else {
                 document.getElementById('input-withellipse').style.display = "none";
                 svg.selectAll("#ellipse").remove();
             }
@@ -278,34 +279,33 @@
 
         // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
         $('input[name=withInner]').change(function () {
-            console.log(us_2dim);
             if ($(this).is(':checked')) {
-                for(let i = 0; i < us_2dim.length; i++) {
-                    console.log(i);
-                    console.log("us_2dim[i]");
-                    console.log(us_2dim[i]);
-                    draw_points(us_2dim[i], "u_point"+i.toString(), FLAVOR_COLOR_1, triangle_layer);
-                    draw_triangle(us_2dim[i], "u_line"+i.toString(), FLAVOR_COLOR_1, triangle_layer);
+                for (let i = 0; i < us_2dim.length; i++) {
+                    draw_points(us_2dim[i], "u_point" + i.toString(), FLAVOR_COLOR_1, triangle_layer);
+                    draw_triangle(us_2dim[i], "u_line" + i.toString(), FLAVOR_COLOR_1, triangle_layer);
                 }
             } else {
-                for(let i= 0; i < us_2dim.length; i++) {
-                svg.selectAll("#u_point"+i.toString()).remove();
-                svg.selectAll("#u_line"+i.toString()).remove();}
+                for (let i = 0; i < us_2dim.length; i++) {
+                    svg.selectAll("#u_point" + i.toString()).remove();
+                    svg.selectAll("#u_line" + i.toString()).remove();
+                }
             }
         });
 
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
         $('input[name=withMiddle]').change(function () {
             if ($(this).is(':checked')) {
-                for(let i= 1; i < n-1; i++) {
-                    var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i+1]];
-                    draw_triangle(points, "p_line"+(i-1).toString(), FLAVOR_COLOR_2, triangle_layer);
+                console.log(ps_2dim);
+                console.log(n);
+                for (let i = 1; i < n - 1; i++) {
+                    var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i + 1]];
+                    draw_triangle(points, "p_line" + (i - 1).toString(), FLAVOR_COLOR_2, triangle_layer);
                 }
                 draw_points(ps_2dim, "p_point", FLAVOR_COLOR_2, triangle_layer);
             } else {
                 svg.selectAll("#p_point").remove();
-                for(let i= 1; i < n-1; i++) {
-                    svg.selectAll("#p_line"+(i-1).toString()).remove();
+                for (let i = 1; i < n - 1; i++) {
+                    svg.selectAll("#p_line" + (i - 1).toString()).remove();
                 }
             }
         });

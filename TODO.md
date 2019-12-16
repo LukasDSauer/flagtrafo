@@ -18,7 +18,9 @@
 
 * Eruption flow for case n=4.
 
-* Convex set for cases up to n = 10.
+* Convex set for cases n > 4. --> Done!
+
+* Problem: Shear flow is an option for n=3.
 
 
 ## Ansible install:

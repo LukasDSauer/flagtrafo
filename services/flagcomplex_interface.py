@@ -42,7 +42,9 @@ def init_flagcomplex_from_data(n, data, pplane, old_pplane):
             direction = np.matmul(rotation_matrix, direction)
             fcomplex.add_flag(p, direction)
 
+    fcomplex.create_triangulation()
     return fcomplex
+
 
 
 def compute_eruption_data(fcomplex, ftess, triangle):
@@ -54,12 +56,12 @@ def compute_eruption_data(fcomplex, ftess, triangle):
         fcomplex.draw_complex()
         fc_drawus = fcomplex.get_projected_us(triangle)
 
-        drawps = rescale_existing_points(3, fcomplex.drawps)
-        drawqs = rescale_existing_points(3, fcomplex.drawqs)
-        drawus = rescale_existing_points(3, fc_drawus)
+        drawps = rescale_existing_points(fcomplex.drawps)
+        drawqs = rescale_existing_points(fcomplex.drawqs)
+        drawus = rescale_existing_points(fc_drawus)
 
         initial_poly, hull, tiles = ftess.generate_tesselation()
-        hull = rescale_existing_points(len(hull), hull)
+        hull = rescale_existing_points(hull)
 
         data[t] = {"ps": drawps, "qs": drawqs, "us": [drawus], "convex": hull}
 
@@ -73,22 +75,23 @@ def compute_shear_data(fcomplex, ftess, quad):
         t = -trafo_range + i
         fcomplex.shear_quadrilateral(t=t_step, quad=quad)
         fcomplex.draw_complex()
-        drawps = rescale_existing_points(4, fcomplex.drawps)
-        drawqs = rescale_existing_points(4, fcomplex.drawqs)
+        drawps = rescale_existing_points(fcomplex.drawps)
+        drawqs = rescale_existing_points(fcomplex.drawqs)
 
         triangle0 = [0, 1, 2]
         triangle1 = [0, 2, 3]
         fc_drawus0 = fcomplex.get_projected_us(triangle0)
         fc_drawus1 = fcomplex.get_projected_us(triangle1)
-        drawus0 = rescale_existing_points(3, fc_drawus0)
-        drawus1 = rescale_existing_points(3, fc_drawus1)
+        drawus0 = rescale_existing_points(fc_drawus0)
+        drawus1 = rescale_existing_points(fc_drawus1)
 
         initial_poly, hull, tiles = ftess.generate_tesselation()
-        hull = rescale_existing_points(len(hull), hull)
+        hull = rescale_existing_points(hull)
 
         data[t] = {"ps": drawps, "qs": drawqs, "us": [drawus0, drawus1], "convex": hull}
 
     return data
+
 
 def compute_bulge_data(fcomplex, ftess, quad):
     data = dict()
@@ -99,26 +102,46 @@ def compute_bulge_data(fcomplex, ftess, quad):
 
         fcomplex.bulge_quadrilateral(t=t_step, quad=quad)
         fcomplex.draw_complex()
-        drawps = rescale_existing_points(4, fcomplex.drawps)
-        drawqs = rescale_existing_points(4, fcomplex.drawqs)
+        drawps = rescale_existing_points(fcomplex.drawps)
+        drawqs = rescale_existing_points(fcomplex.drawqs)
+        drawus = []
 
-        triangle0 = [0, 1, 2]
-        triangle1 = [0, 2, 3]
-        fc_drawus0 = fcomplex.get_projected_us(triangle0)
-        fc_drawus1 = fcomplex.get_projected_us(triangle1)
-        drawus0 = rescale_existing_points(3, fc_drawus0)
-        drawus1 = rescale_existing_points(3, fc_drawus1)
+        for triangle in fcomplex.triangles:
+            fc_drawus = fcomplex.get_projected_us(triangle)
+            drawus.append(rescale_existing_points(fc_drawus))
 
         initial_poly, hull, tiles = ftess.generate_tesselation()
 
-        hull = rescale_existing_points(len(hull), hull)
+        hull = rescale_existing_points(hull)
 
-        data[t] = {"ps": drawps, "qs": drawqs, "us": [drawus0, drawus1], "convex": hull}
+        data[t] = {"ps": drawps, "qs": drawqs, "us": drawus, "convex": hull}
 
     return data
 
 
-def rescale_existing_points(n, points):
+def compute_no_trafo_data(fcomplex, ftess):
+    fcomplex.draw_complex()
+
+    drawps = rescale_existing_points(fcomplex.drawps)
+    drawqs = rescale_existing_points(fcomplex.drawqs)
+    drawus = []
+
+    for triangle in fcomplex.triangles:
+        fc_drawus = fcomplex.get_projected_us(triangle)
+        drawus.append(rescale_existing_points(fc_drawus))
+
+    initial_poly, hull, tiles = ftess.generate_tesselation()
+
+    hull = rescale_existing_points(hull)
+
+    # We have now transformation, so the only valid time value is t=0.
+    data = {0: {"ps": drawps, "qs": drawqs, "us": drawus, "convex": hull}}
+
+    return data
+
+
+
+def rescale_existing_points(points):
     """
     This function rescales all the points in the list "points". If an entry doesn't exist,
     it adds None instead.
@@ -127,6 +150,8 @@ def rescale_existing_points(n, points):
     :param points: a list of numpy arrays.
     :return: a list of n numpy arrays.
     """
+    n = len(points)
+
     points_r = []
     for k in range(n):
         x = points[k]
