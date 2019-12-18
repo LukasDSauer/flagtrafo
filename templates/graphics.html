@@ -83,7 +83,7 @@
             <div class="column column-50" id="div-trafo" style="display:none">
                 <label>Transformation value: <span id="trafovalue">0</span>
                 </label>
-                <input type="range" min="-1000" max="1000" value="0" class="slider" id="range-trafo"/>
+                <input type="range" min="-70" max="70" value="0" class="slider" id="range-trafo"/>
                 <input class="button-primary" type="button" value="Reset" id="button-traforeset">
 
             </div>
@@ -103,7 +103,7 @@
         // The maximal number of flags that can be drawn on the canvas.
         var n_max = 10;
 
-        var trafo_range = 100;
+        var trafo_range = 60;
 
         document.getElementById("range-trafo").max = trafo_range;
         document.getElementById("range-trafo").min = -trafo_range;

@@ -142,8 +142,8 @@ function submit_projection_plane_button() {
 function transform_coordinates(){
     t_str = t.toString();
     // Round to two decimals (value between -10.01 and
-    document.getElementById("trafovalue").innerHTML =
-                Math.round((t * 10 / trafo_range + 0.00001) * trafo_range / 10) * 10 / trafo_range;
+    document.getElementById("trafovalue").innerHTML = (t/10).toString();
+                //Math.round((t / 10 + 0.00001)*10).toString();
     // Update the current coordinates of the ps, qs and us.
     refresh_coordinates();
     refresh_svg(false);
@@ -207,12 +207,14 @@ function submit_flags_to_server(with_refresh) {
                     trafo_data[trafo_type] = data["erupt"];
                 }
                 if (n === 4) {
-                    trafo_type = "eruptmp";
+                    trafo_type = "eruptpp";
                     select_trafo.value = "shear";
 
                     trafo_data["shear"] = data["shear"];
                     trafo_data["bulge"] = data["bulge"];
                     trafo_data["eruptmp"] = data["eruptmp"];
+                    trafo_data["eruptpp"] = data["eruptpp"];
+
                     ellipse = data["ellipse"];
                 }
                 if (n > 4){
