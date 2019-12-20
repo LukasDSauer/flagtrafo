@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from flask_json import FlaskJSON
+from flask_navigation import Navigation
 from flagcomplex import FlagComplex, FlagTesselator
 import copy
 from services.flagcomplex_interface import init_flagcomplex_from_data, \
@@ -10,6 +11,15 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 
 FlaskJSON(app)
+nav = Navigation(app)
+
+nav.Bar('top', [
+    nav.Item('Home', 'home'),
+    nav.Item('Application', 'graphics'),
+    nav.Item('Tricks','tricks'),
+    nav.Item('Mathematical Background', 'math_background'),
+    nav.Item('About', 'about')
+])
 
 """
 Error codes:
@@ -28,6 +38,15 @@ def home():
 def graphics():
     return render_template("graphics.html")
 
+@app.route('/math-background')
+def math_background():
+    return render_template("math_background.html")
+
+@app.route('/tricks')
+def tricks():
+    return render_template("tricks.html")
+
+
 
 @app.route("/about")
 def about():
@@ -44,6 +63,14 @@ def get_transformation_data():
     n = len(data['ps'])
     tesselation_steps = 3
 
+    t_step = 0.1
+    trafo_range = {"erupt": {"trafo_range": 100, "t_step": t_step},
+                   "shear": {"trafo_range": 80, "t_step": t_step},
+                   "bulge": {"trafo_range": 80, "t_step": t_step},
+                   "eruptmp": {"trafo_range": 50, "t_step": t_step},
+                   "eruptpp": {"trafo_range": 50, "t_step": t_step},
+                   "no_trafo": {"trafo_range": 0, "t_step": 0}}
+
     fcomplex = init_flagcomplex_from_data(n, data, pplane, old_pplane)
     app.logger.info("Initialized flag complex with " + str(n) + " flags and projection plane " + str(pplane) + ".")
 
@@ -58,7 +85,7 @@ def get_transformation_data():
         ftess = FlagTesselator(fcomplex, steps=tesselation_steps)
         if n == 3:
             triangle = fcomplex.triangles[0]
-            data['erupt'] = compute_eruption_data(fcomplex, ftess)
+            data['erupt'] = compute_eruption_data(fcomplex, ftess, **trafo_range["erupt"])
             app.logger.info("Computed eruption flow data.")
         if n == 4:
             fcomplex.refresh_setup()
@@ -67,25 +94,27 @@ def get_transformation_data():
             fcomplex1 = copy.deepcopy(fcomplex)
             ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
             app.logger.info("Computing shear flow data...")
-            data['shear'] = compute_shear_data(fcomplex1, ftess1)
+            data['shear'] = compute_shear_data(fcomplex1, ftess1, **trafo_range["shear"])
             app.logger.info("Success!")
             fcomplex1 = copy.deepcopy(fcomplex)
             ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
             app.logger.info("Computing bulge flow data...")
-            data['bulge'] = compute_bulge_data(fcomplex1, ftess1)
+            data['bulge'] = compute_bulge_data(fcomplex1, ftess1, **trafo_range["bulge"])
             app.logger.info("Success!")
             app.logger.info("Computing eruption flow data (-/+)...")
             fcomplex1 = copy.deepcopy(fcomplex)
             ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
-            data['eruptmp'] = compute_eruption_data_minus_plus(fcomplex1, ftess1)
+            data['eruptmp'] = compute_eruption_data_minus_plus(fcomplex1, ftess1, **trafo_range["eruptmp"])
             app.logger.info("Success!")
             app.logger.info("Computing eruption flow data (+/+)...")
             fcomplex1 = copy.deepcopy(fcomplex)
             ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
-            data['eruptpp'] = compute_eruption_data_plus_plus(fcomplex1, ftess1)
+            data['eruptpp'] = compute_eruption_data_plus_plus(fcomplex1, ftess1, **trafo_range["eruptpp"])
             app.logger.info("Success!")
         if n > 4:
             data['no_trafo'] = compute_no_trafo_data(fcomplex, ftess)
+
+        data['trafo_range'] = trafo_range
 
         app.logger.info("All data successfully computed!")
 

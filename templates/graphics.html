@@ -26,24 +26,24 @@
                         <div class="loader" style="display:none" id="loader-flags"></div>
                     </fieldset>
                 </form>
-                <div style="display:none" id="div-checkstriangle">
-                    <label id="input-withinner">
+                <div id="div-checks">
+                    <label id="input-withinner" style="display:none">
                         <input type="checkbox" name="withInner" autocomplete="off"/>
                         Inner triangle
                     </label>
-                    <label id="input-withmiddle">
+                    <label id="input-withmiddle" style="display:none">
                         <input type="checkbox" name="withMiddle" autocomplete="off"/>
                         Middle Triangle
                     </label>
-                    <label style="display:none" id="input-withhelper">
+                    <label style="display:none" id="input-withhelper" style="display:none">
                         <input type="checkbox" name="withHelper" autocomplete="off"/>
                         Helper Lines
                     </label>
-                    <label style="display:none" id="input-withellipse">
+                    <label style="display:none" id="input-withellipse" style="display:none">
                         <input type="checkbox" name="withEllipse" autocomplete="off"/>
                         Ellipse
                     </label>
-                    <label style="display:none" id="input-withconvex">
+                    <label style="display:none" id="input-withconvex" style="display:none">
                         <input type="checkbox" name="withConvex" autocomplete="off"/>
                         Convex Set
                     </label>
@@ -85,7 +85,7 @@
             <div class="column column-40" id="div-trafo" style="display:none">
                 <label>Transformation value: <span id="trafovalue">0</span>
                 </label>
-                <input type="range" min="-70" max="70" value="0" class="slider" id="range-trafo"/>
+                <input type="range" min="-100" max="100" value="0" class="slider" id="range-trafo"/>
                 <input class="button button-outline" type="button" value="Reset" id="button-traforeset">
 
             </div>
@@ -109,10 +109,8 @@
         // The maximal number of flags that can be drawn on the canvas.
         var n_max = 10;
 
-        var trafo_range = 60;
+        var trafo_range = {"notrafo": {"trafo_range": 0, "t_step": 0}};
 
-        document.getElementById("range-trafo").max = trafo_range;
-        document.getElementById("range-trafo").min = -trafo_range;
 
 
         /*
@@ -124,12 +122,12 @@
          */
         var ui_elements =
             {
-                "all_elements": ['button-addflag', 'div-checkstriangle', 'div-trafo',
+                "all_elements": ['button-addflag', 'div-checks', 'div-trafo',
                     'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withinner',
                     'input-withmiddle', 'input-withhelper', 'input-withellipse',
                     'input-withconvex'],
                 "show_for_all_n": ['button-addflag', 'form-pplane', 'input-withconvex',
-                    'input-withinner', 'input-withmiddle', 'div-checkstriangle', "div-savesvg"],
+                    'input-withinner', 'input-withmiddle', 'div-checks', "div-savesvg"],
                 "3":
                     ['div-trafo', 'div-select-trafo', 'option-trafoerupt', 'input-withinner',
                         'input-withhelper'],
@@ -205,13 +203,14 @@
             "shear": null
         };
 
+
         var ellipse = null;
 
 
         /*
          * Different types of transformations: "erupt", "bulge" and "shear" and "no_trafo".
          */
-        var trafo_type = "";
+        var trafo_type = "no_trafo";
 
         // Width and height of the SVG object.
         var width = Math.min(2000, document.getElementById("div-canvas").offsetWidth);
@@ -260,7 +259,7 @@
             });
         });
 
-        // The "Reset transformation" button
+        // The "Save Svg" button
         $(document).ready(function () {
             $("#button-savesvg").click(function () {
                 bottom_layer.append("rect")
@@ -286,14 +285,8 @@
         // The dropdown menu for transformation type
         var select_trafo = document.getElementById("select-trafo");
         select_trafo.onchange = function () {
-            trafo_type = select_trafo.options[select_trafo.selectedIndex].value;
+            switch_trafo_type_to(select_trafo.options[select_trafo.selectedIndex].value);
             refresh_coordinates();
-            if (trafo_type === 'shear') {
-                document.getElementById('input-withellipse').style.display = "block";
-            } else {
-                document.getElementById('input-withellipse').style.display = "none";
-                svg.selectAll("#ellipse").remove();
-            }
             refresh_svg(false);
         };
 
@@ -357,6 +350,8 @@
                 svg.selectAll("#convex").remove();
             }
         });
+
+
 
     </script>
 

@@ -4,12 +4,7 @@ from flagcomplex import FlagComplex, FlagTesselator
 from flagcomplex.EuklGeometryUtility import rotate_vectors
 from flagcomplex.ProjGeometryUtility import transform_four_points
 
-trafo_range = 65
-trafo_range_real = trafo_range*2+1  # n values on the minus side, n values on the plus side, and 0.
 
-# Write the following values by hand to avoid rounding problems.
-t_step = 0.1   # Can be anything.
-t_offset = -6.6  # This must be = (- trafo_range - 1)*t_step
 
 
 def init_flagcomplex_from_data(n, data, pplane, old_pplane):
@@ -49,23 +44,23 @@ def init_flagcomplex_from_data(n, data, pplane, old_pplane):
     return fcomplex
 
 
-def compute_eruption_data(fcomplex, ftess):
+def compute_eruption_data(fcomplex, ftess, trafo_range, t_step):
     triangle = fcomplex.triangles[0]  # This is equal [0, 1, 2].
     args = {"triangle": triangle, "transformation_style": "Q"}
 
-    return compute_trafo_data(fcomplex, ftess, fcomplex.erupt_triangle, args)
+    return compute_trafo_data(fcomplex, ftess, fcomplex.erupt_triangle, args, trafo_range, t_step)
 
 
-def compute_shear_data(fcomplex, ftess):
+def compute_shear_data(fcomplex, ftess, trafo_range, t_step):
     quad = [0, 1, 2, 3]
     args = {"quad": quad}
-    return compute_trafo_data(fcomplex, ftess, fcomplex.shear_quadrilateral, args)
+    return compute_trafo_data(fcomplex, ftess, fcomplex.shear_quadrilateral, args, trafo_range, t_step)
 
 
-def compute_bulge_data(fcomplex, ftess):
+def compute_bulge_data(fcomplex, ftess, trafo_range, t_step):
     quad = [0, 1, 2, 3]
     args = {"quad": quad}
-    return compute_trafo_data(fcomplex, ftess, fcomplex.bulge_quadrilateral, args)
+    return compute_trafo_data(fcomplex, ftess, fcomplex.bulge_quadrilateral, args, trafo_range, t_step)
 
 
 def trafo_eruption_minus_plus(t, fcomplex, triangle0, triangle1, style, other_points):
@@ -80,15 +75,15 @@ def trafo_eruption_plus_plus(t, fcomplex, triangle0, triangle1, style, other_poi
     fcomplex.projective_transformation = transform_four_points(fcomplex.qs, other_points=other_points)
 
 
-def compute_eruption_data_plus_plus(fcomplex, ftess):
-    return compute_two_triangle_eruption_data(fcomplex, ftess, trafo_eruption_plus_plus)
+def compute_eruption_data_plus_plus(fcomplex, ftess, trafo_range, t_step):
+    return compute_two_triangle_eruption_data(fcomplex, ftess, trafo_eruption_plus_plus, trafo_range, t_step)
 
 
-def compute_eruption_data_minus_plus(fcomplex, ftess):
-    return compute_two_triangle_eruption_data(fcomplex, ftess, trafo_eruption_minus_plus)
+def compute_eruption_data_minus_plus(fcomplex, ftess, trafo_range, t_step):
+    return compute_two_triangle_eruption_data(fcomplex, ftess, trafo_eruption_minus_plus, trafo_range, t_step)
 
 
-def compute_two_triangle_eruption_data(fcomplex, ftess, ftrafo_twotri):
+def compute_two_triangle_eruption_data(fcomplex, ftess, ftrafo_twotri, trafo_range, t_step):
     style = "Q"
 
     triangle0 = [1, 2, 0]
@@ -103,11 +98,16 @@ def compute_two_triangle_eruption_data(fcomplex, ftess, ftrafo_twotri):
     args = {"fcomplex": fcomplex, "triangle0": triangle0, "triangle1": triangle1, "style": style,
             "other_points": other_points}
 
-    return compute_trafo_data(fcomplex, ftess, ftrafo_twotri, args)
+    return compute_trafo_data(fcomplex, ftess, ftrafo_twotri, args, trafo_range, t_step)
 
 
-def compute_trafo_data(fcomplex, ftess, ftrafo, args):
+def compute_trafo_data(fcomplex, ftess, ftrafo, args, trafo_range, t_step):
     data = dict()
+
+    # n values on the minus side, n values on the plus side, and 0.
+    trafo_range_real = trafo_range*2 + 1
+    # The transformation step we need to do at the beginning.
+    t_offset = (- trafo_range - 1) * t_step
 
     ftrafo(t=t_offset, **args)
 

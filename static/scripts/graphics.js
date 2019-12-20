@@ -21,13 +21,14 @@ function switch_program_mode_to(mode) {
         }
     }
     if (mode === "addFlags") {
-        if(us_2dim != null){
+        if (us_2dim != null) {
 
 
-        for (let i = 0; i < us_2dim.length; i++) {
-            svg.selectAll("#u_point" + i.toString()).remove();
-            svg.selectAll("#u_line" + i.toString()).remove();
-        }}
+            for (let i = 0; i < us_2dim.length; i++) {
+                svg.selectAll("#u_point" + i.toString()).remove();
+                svg.selectAll("#u_line" + i.toString()).remove();
+            }
+        }
         for (let i = 0; i < n - 1; i++) {
             svg.selectAll("#p_line" + i.toString()).remove();
         }
@@ -139,17 +140,31 @@ function submit_projection_plane_button() {
     }
 }
 
-function transform_coordinates(){
+function switch_trafo_type_to(type) {
+    trafo_type = type;
+    select_trafo.value = type;
+
+    document.getElementById("range-trafo").max = trafo_range[trafo_type]["trafo_range"];
+    document.getElementById("range-trafo").min = -trafo_range[trafo_type]["trafo_range"];
+    if (trafo_type === 'shear') {
+        document.getElementById('input-withellipse').style.display = "block";
+    } else {
+        document.getElementById('input-withellipse').style.display = "none";
+        svg.selectAll("#ellipse").remove();
+    }
+}
+
+function transform_coordinates() {
     t_str = t.toString();
-    // Round to two decimals (value between -10.01 and
-    document.getElementById("trafovalue").innerHTML = (t/10).toString();
-                //Math.round((t / 10 + 0.00001)*10).toString();
+    // Basically we want t*t_step, but this sometimes gives us long floating points numbers, so we
+    // perform some rounding magic.
+    document.getElementById("trafovalue").innerHTML = (Math.round(10*t * trafo_range[trafo_type]["t_step"]+0.00001)/10).toString();
     // Update the current coordinates of the ps, qs and us.
     refresh_coordinates();
     refresh_svg(false);
 }
 
-function refresh_coordinates(){
+function refresh_coordinates() {
     ps_2dim = trafo_data[trafo_type][t_str]["ps"];
     qs_2dim = trafo_data[trafo_type][t_str]["qs"];// From now on, we can use the qs for the ds, as they simply are another point on the line,
     // and this is all that we need.
@@ -169,6 +184,11 @@ function refresh_coordinates(){
  * order to prevent changes from the user.
  */
 function submit_flags_to_server(with_refresh) {
+    if (trafo_type !== "no_trafo") {
+        t = 0;
+        t_str = "0";
+        refresh_coordinates();
+    }
     hide_editing_elements();
     // Switch off mouse events during loading.
     svg.on("mousemove", null);
@@ -182,7 +202,7 @@ function submit_flags_to_server(with_refresh) {
         "ps": ps_2dim,
         "ds": ds_2dim,
         "pplane": proj_plane,
-        "oldpplane": old_proj_plane
+        "oldpplane": old_proj_plane,
     };
     data = JSON.stringify(data);
 
@@ -202,27 +222,28 @@ function submit_flags_to_server(with_refresh) {
                 hide_loader();
                 switch_program_mode_to("addFlags");
             } else {
+                trafo_range = data["trafo_range"];
+
                 if (n === 3) {
-                    trafo_type = "erupt";
+                    switch_trafo_type_to("erupt");
                     trafo_data[trafo_type] = data["erupt"];
                 }
                 if (n === 4) {
-                    trafo_type = "shear";
-                    select_trafo.value = "shear";
-
+                    switch_trafo_type_to("shear");
                     trafo_data["shear"] = data["shear"];
                     trafo_data["bulge"] = data["bulge"];
                     trafo_data["eruptmp"] = data["eruptmp"];
                     trafo_data["eruptpp"] = data["eruptpp"];
-
                     ellipse = data["ellipse"];
                 }
-                if (n > 4){
+
+                if (n > 4) {
                     t = 0;
                     t_str = "0";
-                    trafo_type= "no_trafo";
+                    switch_trafo_type_to("no_trafo");
                     trafo_data["no_trafo"] = data["no_trafo"];
                 }
+
 
                 refresh_coordinates();
                 if (with_refresh) {
@@ -575,7 +596,7 @@ function get_intersection_with_frame(point0, point1) {
         return [point0, point1]
     }
 
-    t = order_of_magnitude(t) * 10;
+    t = order_of_magnitude(t)*5;
     return [[t * diff[0] + point0[0], t * diff[1] + point0[1]], [-t * diff[0] + point0[0], -t * diff[1] + point0[1]]];
 }
 
@@ -591,10 +612,11 @@ function order_of_magnitude(n) {
 }
 
 function saveSvg(svgEl, name) {
-    svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");    var svgData = svgEl.outerHTML;
+    svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    var svgData = svgEl.outerHTML;
     console.log(svgData);
     var preface = '<?xml version="1.0" standalone="no"?>\r\n';
-    var svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
+    var svgBlob = new Blob([preface, svgData], {type: "image/svg+xml;charset=utf-8"});
     var svgUrl = URL.createObjectURL(svgBlob);
     var downloadLink = document.createElement("a");
     downloadLink.href = svgUrl;
