@@ -1,16 +1,25 @@
-#import sys
-#sys.path.append('../flagcomplex/')
-
 from flask import Flask, render_template, request, jsonify
-from flask_json import FlaskJSON #, JsonError, json_response, as_json
-from flagcomplex import FlagComplex
-from flagcomplex.EuklGeometryUtility import rotate_vectors
-import numpy as np
+from flask_json import FlaskJSON
+from flask_navigation import Navigation
+from flagcomplex import FlagComplex, FlagTesselator
+import copy
+from services.flagcomplex_interface import init_flagcomplex_from_data, \
+    compute_eruption_data, compute_shear_data, compute_bulge_data, compute_ellipse, \
+    rescale_existing_points, compute_no_trafo_data, compute_eruption_data_minus_plus, compute_eruption_data_plus_plus
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
 
 FlaskJSON(app)
+nav = Navigation(app)
+
+nav.Bar('top', [
+    nav.Item('Home', 'home'),
+    nav.Item('Application', 'graphics'),
+    nav.Item('Tricks','tricks'),
+    nav.Item('Mathematical Background', 'math_background'),
+    nav.Item('About', 'about')
+])
 
 """
 Error codes:
@@ -24,105 +33,92 @@ Error codes:
 def home():
     return render_template("home.html")
 
+
 @app.route('/graphics')
 def graphics():
     return render_template("graphics.html")
+
+@app.route('/math-background')
+def math_background():
+    return render_template("math_background.html")
+
+@app.route('/tricks')
+def tricks():
+    return render_template("tricks.html")
+
+
 
 @app.route("/about")
 def about():
     return render_template("about.html")
 
+
 @app.route("/flagcomplex/get_transformation_data", methods=['POST'])
 def get_transformation_data():
-    fcomplex = FlagComplex()
-
     # The input data from the post request contains information about the points "ps", the line they are on "ds",
     # as well as the projection plane "pplane".
     data = request.get_json()
-
-
     pplane = data["pplane"]
     old_pplane = data["oldpplane"]
-    app.logger.info("Setting the projection plane to be " + str(pplane) + ".")
-    fcomplex.set_projection_plane(np.array(pplane))
-    # The number of flags
     n = len(data['ps'])
-    # Adding all flags to the flag complex object
-    app.logger.info("Adding " + str(n) + " flags to the python flag complex object.")
-    if old_pplane == [0, 0, 1]:
-        for i in range(n):
-            p = data['ps'][i]
-            # Note: We don't need this. Therefore, I commented it.
-            # The webpage svg calculates coordinates on the scale of pixels,
-            # which gives us very big numbers. We rescale them by a factor of 100.
-            #p[:] = [x/100 for x in p]
-            #p.append(1)
-            p.append(100)
-            direction = data['ds'][i]
-            #direction[:] = [x/100 for x in direction]
-            #direction.append(1)
-            direction.append(100)
-            fcomplex.add_flag(p, direction)
-    else:
-        for i in range(n):
-            p = data['ps'][i]
-            p.append(100)
-            direction = data['ds'][i]
-            direction.append(100)
-            rotation_matrix = rotate_vectors(np.array([0, 0, 1]), np.array(old_pplane))
-            p = np.matmul(rotation_matrix, p)
-            direction = np.matmul(rotation_matrix, direction)
+    tesselation_steps = 3
 
-            fcomplex.add_flag(p, direction)
+    t_step = 0.1
+    trafo_range = {"erupt": {"trafo_range": 100, "t_step": t_step},
+                   "shear": {"trafo_range": 80, "t_step": t_step},
+                   "bulge": {"trafo_range": 80, "t_step": t_step},
+                   "eruptmp": {"trafo_range": 50, "t_step": t_step},
+                   "eruptpp": {"trafo_range": 50, "t_step": t_step},
+                   "no_trafo": {"trafo_range": 0, "t_step": 0}}
+
+    fcomplex = init_flagcomplex_from_data(n, data, pplane, old_pplane)
+    app.logger.info("Initialized flag complex with " + str(n) + " flags and projection plane " + str(pplane) + ".")
 
     # Checking the triple flow condition:
-    if fcomplex.get_triple_ratio([0, 1, 2]) <= 0:
+    if not fcomplex.is_complex_positive():
         app.logger.info("Flag complex not positive!")
         data['error'] = 1
     else:
         data['error'] = 0
-
         # Computing eruption flow data
         fcomplex.create_triangulation()
-        triangle = fcomplex.triangles[0]
+        ftess = FlagTesselator(fcomplex, steps=tesselation_steps)
+        if n == 3:
+            triangle = fcomplex.triangles[0]
+            data['erupt'] = compute_eruption_data(fcomplex, ftess, **trafo_range["erupt"])
+            app.logger.info("Computed eruption flow data.")
+        if n == 4:
+            fcomplex.refresh_setup()
+            data['ellipse'] = compute_ellipse(fcomplex)
+            app.logger.info("Computed ellipse.")
+            fcomplex1 = copy.deepcopy(fcomplex)
+            ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
+            app.logger.info("Computing shear flow data...")
+            data['shear'] = compute_shear_data(fcomplex1, ftess1, **trafo_range["shear"])
+            app.logger.info("Success!")
+            fcomplex1 = copy.deepcopy(fcomplex)
+            ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
+            app.logger.info("Computing bulge flow data...")
+            data['bulge'] = compute_bulge_data(fcomplex1, ftess1, **trafo_range["bulge"])
+            app.logger.info("Success!")
+            app.logger.info("Computing eruption flow data (-/+)...")
+            fcomplex1 = copy.deepcopy(fcomplex)
+            ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
+            data['eruptmp'] = compute_eruption_data_minus_plus(fcomplex1, ftess1, **trafo_range["eruptmp"])
+            app.logger.info("Success!")
+            app.logger.info("Computing eruption flow data (+/+)...")
+            fcomplex1 = copy.deepcopy(fcomplex)
+            ftess1 = FlagTesselator(fcomplex1, steps=tesselation_steps)
+            data['eruptpp'] = compute_eruption_data_plus_plus(fcomplex1, ftess1, **trafo_range["eruptpp"])
+            app.logger.info("Success!")
+        if n > 4:
+            data['no_trafo'] = compute_no_trafo_data(fcomplex, ftess)
 
-        app.logger.info("Computing eruption flow data.")
-        fcomplex.erupt_triangle(t=-10.01, triangle=triangle, transformation_style="Q")
-        for i in range(2001):
-            t = -1000 + i
-            fcomplex.erupt_triangle(t=0.01, triangle=triangle, transformation_style="Q")
-            fcomplex.draw_complex()
-            fc_drawus = fcomplex.get_projected_us(triangle)
+        data['trafo_range'] = trafo_range
 
-            drawps= []
-            drawqs= []
-            drawus = []
+        app.logger.info("All data successfully computed!")
 
-            for k in range(n):
-                x = fcomplex.drawps[k]
-                if x is not None:
-                    drawps.append((x*100).tolist())
-                else:
-                    drawps.append(None)
-                x = fcomplex.drawqs[k]
-                if x is not None:
-                    drawqs.append((x * 100).tolist())
-                else:
-                    drawqs.append(None)
-                x = fc_drawus[k]
-                if x is not None:
-                    drawus.append((x * 100).tolist())
-                else:
-                    drawus.append(None)
-                data[t] = {"ps": drawps, "qs": drawqs, "us": drawus}
-                app.logger.info("Data successfully computed!")
     return jsonify(data)
-
-#@app.before_request
-#def log_request_info():
-#    #app.logger.debug('Headers: %s', request.headers)
-#    app.logger.debug('Body: %s', request.get_data())
-#    return
 
 
 if __name__ == '__main__':

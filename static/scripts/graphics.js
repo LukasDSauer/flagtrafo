@@ -21,14 +21,28 @@ function switch_program_mode_to(mode) {
         }
     }
     if (mode === "addFlags") {
-        svg.selectAll("#u_point").remove();
-        svg.selectAll("#u_line").remove();
+        if (us_2dim != null) {
+
+
+            for (let i = 0; i < us_2dim.length; i++) {
+                svg.selectAll("#u_point" + i.toString()).remove();
+                svg.selectAll("#u_line" + i.toString()).remove();
+            }
+        }
+        for (let i = 0; i < n - 1; i++) {
+            svg.selectAll("#p_line" + i.toString()).remove();
+        }
         svg.selectAll("#p_point").remove();
-        svg.selectAll("#p_line").remove();
+
         svg.selectAll("#helper_line").remove();
+        svg.selectAll("#convex").remove();
+        svg.selectAll("#ellipse").remove();
+
         hide_editing_elements();
         document.getElementById("button-addflag").style.display = "block";
         document.getElementById('button-addflag').value = "Finish";
+        svg.on("mousemove", mouse_move_point_or_line)
+            .on("click", mouse_click_point_or_line);
         switch_program_mode_to("addPoints");
     }
     if (mode === "addPoints") {
@@ -45,7 +59,7 @@ function switch_program_mode_to(mode) {
 
 function submit_flags_button() {
     if (program_mode === "addPoints" || program_mode === "addLines") {
-        if (n_submit.includes(n)) {
+        if (n > 2) {
             submit_flags_to_server(false);
         } else {
             svg.selectAll("#newpoint").remove();
@@ -54,8 +68,6 @@ function submit_flags_button() {
         }
     } else if (program_mode === "standard") {
         switch_program_mode_to("addFlags");
-        svg.on("mousemove", mouse_move_point_or_line)
-            .on("click", mouse_click_point_or_line);
     }
 }
 
@@ -67,7 +79,6 @@ function mouse_move_point_or_line() {
     liveCoordinates = d3.mouse(this);
 
     if (program_mode === "addPoints") {
-        //TODO: Change this to drawPoints, we don't need the extra function.
         draw_points([liveCoordinates], "newpoint", NEW_HIGHLIGHT_COLOR, flag_layer);
     } else if (program_mode === "addLines") {
         draw_infinite_lines([fixedCoordinates], [liveCoordinates], "newline", NEW_HIGHLIGHT_COLOR, flag_layer);
@@ -86,16 +97,16 @@ function mouse_click_point_or_line() {
     } else if (program_mode == "addLines") {
         if (n <= n_max) {
             svg.selectAll("#newline")
-            .style('stroke', '#393939')
-            .attr("id", "line");
+                .style('stroke', '#393939')
+                .attr("id", "line");
 
             svg.selectAll("#newpoint")
                 .style('stroke', '#393939')
                 .style('fill', '#393939')
                 .attr("id", "point");
 
-            ps_2dim[n] = fixedCoordinates;
-            ds_2dim[n] = liveCoordinates;
+            ps_2dim.push(fixedCoordinates);
+            ds_2dim.push(liveCoordinates);
             n++;
             switch_program_mode_to("addPoints");
         } else {
@@ -129,6 +140,39 @@ function submit_projection_plane_button() {
     }
 }
 
+function switch_trafo_type_to(type) {
+    trafo_type = type;
+    select_trafo.value = type;
+
+    document.getElementById("range-trafo").max = trafo_range[trafo_type]["trafo_range"];
+    document.getElementById("range-trafo").min = -trafo_range[trafo_type]["trafo_range"];
+    if (trafo_type === 'shear') {
+        document.getElementById('input-withellipse').style.display = "block";
+    } else {
+        document.getElementById('input-withellipse').style.display = "none";
+        svg.selectAll("#ellipse").remove();
+    }
+}
+
+function transform_coordinates() {
+    t_str = t.toString();
+    // Basically we want t*t_step, but this sometimes gives us long floating points numbers, so we
+    // perform some rounding magic.
+    document.getElementById("trafovalue").innerHTML = (Math.round(10*t * trafo_range[trafo_type]["t_step"]+0.00001)/10).toString();
+    // Update the current coordinates of the ps, qs and us.
+    refresh_coordinates();
+    refresh_svg(false);
+}
+
+function refresh_coordinates() {
+    ps_2dim = trafo_data[trafo_type][t_str]["ps"];
+    qs_2dim = trafo_data[trafo_type][t_str]["qs"];// From now on, we can use the qs for the ds, as they simply are another point on the line,
+    // and this is all that we need.
+    ds_2dim = qs_2dim;
+    us_2dim = trafo_data[trafo_type][t_str]["us"];
+    convex = trafo_data[trafo_type][t_str]["convex"];
+}
+
 /*
  * Functions for interaction with the server.
  */
@@ -140,7 +184,15 @@ function submit_projection_plane_button() {
  * order to prevent changes from the user.
  */
 function submit_flags_to_server(with_refresh) {
+    if (trafo_type !== "no_trafo") {
+        t = 0;
+        t_str = "0";
+        refresh_coordinates();
+    }
     hide_editing_elements();
+    // Switch off mouse events during loading.
+    svg.on("mousemove", null);
+    svg.on("click", null);
     show_loader();
 
     svg.selectAll("#newpoint").remove();
@@ -150,10 +202,9 @@ function submit_flags_to_server(with_refresh) {
         "ps": ps_2dim,
         "ds": ds_2dim,
         "pplane": proj_plane,
-        "oldpplane": old_proj_plane
+        "oldpplane": old_proj_plane,
     };
     data = JSON.stringify(data);
-    console.log(data);
 
     $.ajax({
         type: "POST",
@@ -163,25 +214,44 @@ function submit_flags_to_server(with_refresh) {
         contentType: "application/json; charset=utf-8"
     })
         .done(function (data) {
-            if(data["error"] !== 0){
+            if (data["error"] !== 0) {
                 alert(error_codes[data["error"]]);
-            }
-            else{
-                trafo_data = data;
-                ps_2dim = trafo_data[t_str]["ps"];
-                qs_2dim = trafo_data[t_str]["qs"];
-                // From now on, we can use the qs for the ds, as they simply are another point on the line,
-                // and this is all that we need.
-                ds_2dim = trafo_data[t_str]["qs"];
-                us_2dim = trafo_data[t_str]["us"];
+                svg.selectAll("#point").remove();
+                svg.selectAll("#line").remove();
+                n = 0;
+                hide_loader();
+                switch_program_mode_to("addFlags");
+            } else {
+                trafo_range = data["trafo_range"];
+
+                if (n === 3) {
+                    switch_trafo_type_to("erupt");
+                    trafo_data[trafo_type] = data["erupt"];
+                }
+                if (n === 4) {
+                    switch_trafo_type_to("shear");
+                    trafo_data["shear"] = data["shear"];
+                    trafo_data["bulge"] = data["bulge"];
+                    trafo_data["eruptmp"] = data["eruptmp"];
+                    trafo_data["eruptpp"] = data["eruptpp"];
+                    ellipse = data["ellipse"];
+                }
+
+                if (n > 4) {
+                    t = 0;
+                    t_str = "0";
+                    switch_trafo_type_to("no_trafo");
+                    trafo_data["no_trafo"] = data["no_trafo"];
+                }
 
 
+                refresh_coordinates();
                 if (with_refresh) {
                     refresh_svg();
                 }
+                hide_loader();
+                switch_program_mode_to("standard");
             }
-            hide_loader();
-            switch_program_mode_to("standard");
         });
 }
 
@@ -194,12 +264,19 @@ function submit_flags_to_server(with_refresh) {
  */
 function refresh_svg() {
     update_points(ps_2dim, "point");
-    update_points(us_2dim, "u_point");
     update_points(ps_2dim, "p_point");
-    update_triangle(us_2dim, "u_line");
-    update_triangle(ps_2dim, "p_line");
+    for (let i = 0; i < us_2dim.length; i++) {
+        update_points(us_2dim[i], "u_point" + i.toString());
+        update_triangle(us_2dim[i], "u_line" + i.toString());
+    }
+    for (let i = 1; i < n - 1; i++) {
+        var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i + 1]];
+        update_triangle(points, "p_line" + (i - 1).toString());
+    }
     update_helper_lines(ps_2dim, qs_2dim, "helper_line");
     update_infinite_lines(ps_2dim, ds_2dim, "line");
+
+    update_polygon(convex, "convex");
 }
 
 /**
@@ -273,20 +350,21 @@ function draw_points(data, id, color, layer) {
 
 /**
  * draws lines connecting the three corners of the triangle specified in data
+ * or more generally also draws a polygon.
  *
  * @param data: a 3-dim array of 2-dim arrays
  * @param id: an id string for identifying the triangle's lines later
  * @param color: a color string specifying the object's color
  */
 function draw_triangle(data, id, color, layer) {
-    for (var i = 0; data.length - 1; i++) {
+    for (let i = 0; i < data.length; i++) {
         layer.append("line")
             .attr("id", id)
             .style('stroke', color)
             .attr("x1", data[i][0])
             .attr("y1", data[i][1])
-            .attr("x2", data[(i + 1) % 3][0])
-            .attr("y2", data[(i + 1) % 3][1]);
+            .attr("x2", data[(i + 1) % data.length][0])
+            .attr("y2", data[(i + 1) % data.length][1]);
     }
 }
 
@@ -307,6 +385,33 @@ function draw_helper_lines(data_middle, data_outer, id, color, layer) {
             .attr("x2", data_outer[(i + 2) % 3][0])
             .attr("y2", data_outer[(i + 2) % 3][1]);
     }
+}
+
+function draw_polygon(data, id, color, layer) {
+    layer.selectAll(id)
+        .data([data])
+        .enter().append("polygon")
+        .attr("id", id)
+        .attr("points", function (d) {
+            return d.map(function (d) {
+                return [d[0], d[1]].join(",");
+            }).join(" ");
+        })
+        .attr("stroke", color)
+        .attr("stroke-width", 1)
+        .attr("fill", color)
+        .attr("fill-opacity", 0.1);
+
+}
+
+function update_polygon(data, id) {
+    svg.selectAll("#" + id)
+        .data([data])
+        .attr("points", function (d) {
+            return d.map(function (d) {
+                return [d[0], d[1]].join(",");
+            }).join(" ");
+        });
 }
 
 /**
@@ -343,7 +448,11 @@ function update_infinite_lines(data0, data1, id) {
  * @param id
  */
 function update_triangle(data, id) {
-    var index = [0, 1, 2];
+    let l = data.length;
+    let index = [];
+    for (let i = 0; i < l; i++) {
+        index.push(i);
+    }
     svg.selectAll("#" + id)
         .data(index)
         .attr("x1", function (i) {
@@ -353,10 +462,10 @@ function update_triangle(data, id) {
             return data[i][1];
         })
         .attr("x2", function (i) {
-            return data[(i + 1) % 3][0];
+            return data[(i + 1) % l][0];
         })
         .attr("y2", function (i) {
-            return data[(i + 1) % 3][1];
+            return data[(i + 1) % l][1];
         });
 }
 
@@ -424,8 +533,6 @@ function hide_loader() {
  */
 function show_editing_elements() {
     // UI elements that are only displayed for this particular number of flags n.
-    console.log(Object.keys(ui_elements));
-
     if (Object.keys(ui_elements).includes(n.toString())) {
         ui_elements[n.toString()].forEach(function (item, index) {
             document.getElementById(item).style.display = "block";
@@ -435,6 +542,13 @@ function show_editing_elements() {
     ui_elements["show_for_all_n"].forEach(function (item, index) {
         document.getElementById(item).style.display = "block";
     });
+    if (n === 3) {
+        select_trafo.options[select_trafo.selectedIndex].value = "erupt";
+    }
+    if (n === 4) {
+        select_trafo.options[select_trafo.selectedIndex].value = "shear";
+        document.getElementById('input-withellipse').style.display = "block";
+    }
 }
 
 /**
@@ -458,29 +572,58 @@ function show_loader() {
  * @returns {[]}: an array of two 2-dim arrays
  */
 function get_intersection_with_frame(point0, point1) {
-    var output = [];
+    /*
+     * In fact, for our purpose it is not important that the intersection points
+     * really lie exactly on the canvas. They just need to lie outside the canvas.
+     * Therefore, we consider the vectors t*(point1-point0)+ point0 for all t.
+     * They describe the line passing to point1 and point0. Now we only need to
+     * choose t big (and small) enough in order to get out of the canvas.
+     *
+     * This simplification reduces rounding errors in comparison to the calculation
+     * of the precise intersection points.
+     */
+    var diff = [point1[0] - point0[0], point1[1] - point0[1]];
 
-    if (point0[0] - point1[0] !== Infinity) {
-        var a = (point0[1] - point1[1]) / (point0[0] - point1[0]);
-        var b = point0[1] - a * point0[0];
-        // The following points are the possible intersection
-        // points of the line a*x+b with the image frame lines.
-        var intersection_points = [];
-        intersection_points.push([0, b]);
-        intersection_points.push([width, a * width + b]);
-        intersection_points.push([-b / a, 0]);
-        intersection_points.push([(height - b) / a, height]);
-        // Now we need to check whether the points are also inside the frame.
+    var t = 0;
 
-        for (var x in intersection_points) {
-            if (intersection_points[x][0] >= 0 && intersection_points[x][0] <= width && intersection_points[x][1] >= 0 && intersection_points[x][1] <= height) {
-                output.push(intersection_points[x]);
-            }
-        }
+    if (diff[0] !== 0 && diff[1] !== 0) {
+        t = Math.max(Math.abs((width + point0[0]) / diff[0]), Math.abs((height + point0[1]) / diff[1]));
+    } else if (diff[0] !== 0) {
+        t = Math.abs((width + point0[0]) / diff[0]);
+    } else if (diff[1] !== 0) {
+        t = Math.abs((height + point0[1]) / diff[1]);
     } else {
-        console.info('Handling exception Infinity!');
+        return [point0, point1]
     }
-    return output;
+
+    t = order_of_magnitude(t)*5;
+    return [[t * diff[0] + point0[0], t * diff[1] + point0[1]], [-t * diff[0] + point0[0], -t * diff[1] + point0[1]]];
+}
+
+/**
+ * Returns the order of magnitude for a float n, e.g. for n = 104634, we get 100000.
+ * @param n
+ * @returns {number}
+ */
+function order_of_magnitude(n) {
+    var order = Math.floor(Math.log(n) / Math.LN10
+        + 0.000000001); // because float math sucks like that
+    return Math.pow(10, order);
+}
+
+function saveSvg(svgEl, name) {
+    svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    var svgData = svgEl.outerHTML;
+    console.log(svgData);
+    var preface = '<?xml version="1.0" standalone="no"?>\r\n';
+    var svgBlob = new Blob([preface, svgData], {type: "image/svg+xml;charset=utf-8"});
+    var svgUrl = URL.createObjectURL(svgBlob);
+    var downloadLink = document.createElement("a");
+    downloadLink.href = svgUrl;
+    downloadLink.download = name;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
 }
 
 

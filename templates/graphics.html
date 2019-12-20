@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
     <meta charset="utf-8">
-    <title>Flag complex transformator</title>
+    <title>Flag Transformator | Application</title>
 
     <script type="text/javascript" src="http://www.json.org/json2.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -26,26 +26,38 @@
                         <div class="loader" style="display:none" id="loader-flags"></div>
                     </fieldset>
                 </form>
-                <div style="display:none" id="div-checkstriangle">
-                    <label>
+                <div id="div-checks">
+                    <label id="input-withinner" style="display:none">
                         <input type="checkbox" name="withInner" autocomplete="off"/>
                         Inner triangle
                     </label>
-                    <label>
+                    <label id="input-withmiddle" style="display:none">
                         <input type="checkbox" name="withMiddle" autocomplete="off"/>
                         Middle Triangle
                     </label>
-                    <label>
+                    <label style="display:none" id="input-withhelper" style="display:none">
                         <input type="checkbox" name="withHelper" autocomplete="off"/>
                         Helper Lines
+                    </label>
+                    <label style="display:none" id="input-withellipse" style="display:none">
+                        <input type="checkbox" name="withEllipse" autocomplete="off"/>
+                        Ellipse
+                    </label>
+                    <label style="display:none" id="input-withconvex" style="display:none">
+                        <input type="checkbox" name="withConvex" autocomplete="off"/>
+                        Convex Set
                     </label>
                 </div>
                 <div style="display:none" id="div-select-trafo">
                     <label>Trafo type
-                        <select>
-                            <option id="option-trafoerupt" value="erupt-flow" style="display:none">Eruption flow</option>
-                            <option id="option-trafobulge" value="bulge-flow" style="display:none">Bulge flow</option>
-                            <option id = "option-trafoshear" value="shear-flow" style="display:none">Shear flow</option>
+                        <select id="select-trafo">
+                            <option id="option-trafoerupt" value="erupt" style="display:none">Eruption flow</option>
+                            <option id="option-trafoeruptmp" value="eruptmp" style="display:none">Eruption flow (-/+)
+                            </option>
+                            <option id="option-trafoeruptpp" value="eruptpp" style="display:none">Eruption flow (+/+)
+                            </option>
+                            <option id="option-trafobulge" value="bulge" style="display:none">Bulge flow</option>
+                            <option id="option-trafoshear" value="shear" style="display:none">Shear flow</option>
                         </select>
                     </label>
                 </div>
@@ -54,7 +66,7 @@
         </div>
 
         <section class="row">
-            <div class="column column-50">
+            <div class="column column-40">
                 <form name="projection_plane_form" id="form-pplane" style="display:none">
                     <fieldset>
                         <label form="projection_plane_form">Projection plane:
@@ -66,16 +78,20 @@
                         <input type="text" name="ppz" placeholder="z" id="input-ppz"
                                style="display: inline; white-space: nowrap; width: 15%">
                         <!--Type must be button, not submit. Otherwise, the page would be refreshed every time.-->
-                        <input class="button-primary" type="button" value="Set" id="button-pplane">
+                        <input class="button button-outline" type="button" value="Set" id="button-pplane">
                     </fieldset>
                 </form>
             </div>
-            <div class="column column-50" id="div-trafo" style="display:none">
+            <div class="column column-40" id="div-trafo" style="display:none">
                 <label>Transformation value: <span id="trafovalue">0</span>
                 </label>
-                <div class="slidecontainer">
-                    <input type="range" min="-1000" max="1000" value="0" class="slider" id="traforange"/>
-                </div>
+                <input type="range" min="-100" max="100" value="0" class="slider" id="range-trafo"/>
+                <input class="button button-outline" type="button" value="Reset" id="button-traforeset">
+
+            </div>
+            <div class="column column-20" id="div-savesvg" style="display:none">
+                <label>Save to .svg-File</label>
+                <input class="button" type="button" value="Save" id="button-savesvg">
             </div>
         </section>
     </section>
@@ -85,13 +101,17 @@
         /**
          * Fixed variables
          */
-        // Access to all the CSS style modifications of the HTML document.
+            // Access to all the CSS style modifications of the HTML document.
         var style = window.getComputedStyle(document.body);
 
         //The numbers of flags for which there is some kind of interaction with the server.
-        var n_submit = [3];
+        var n_submit = [3, 4];
         // The maximal number of flags that can be drawn on the canvas.
         var n_max = 10;
+
+        var trafo_range = {"notrafo": {"trafo_range": 0, "t_step": 0}};
+
+
 
         /*
          * A JSON object of ids of UI elements.
@@ -102,11 +122,19 @@
          */
         var ui_elements =
             {
-                "all_elements": ['button-addflag', 'div-checkstriangle', 'div-trafo',
-                    'div-select-trafo', 'form-pplane', 'option-trafoerupt'],
-                "show_for_all_n": ['button-addflag'],
+                "all_elements": ['button-addflag', 'div-checks', 'div-trafo',
+                    'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withinner',
+                    'input-withmiddle', 'input-withhelper', 'input-withellipse',
+                    'input-withconvex'],
+                "show_for_all_n": ['button-addflag', 'form-pplane', 'input-withconvex',
+                    'input-withinner', 'input-withmiddle', 'div-checks', "div-savesvg"],
                 "3":
-                    ['div-checkstriangle', 'div-trafo', 'div-select-trafo', 'form-pplane', 'option-trafoerupt']
+                    ['div-trafo', 'div-select-trafo', 'option-trafoerupt', 'input-withinner',
+                        'input-withhelper'],
+                "4":
+                    ['div-trafo', 'div-select-trafo', 'option-trafobulge', 'option-trafoshear',
+                        'input-withinner', 'input-withellipse', 'option-trafoeruptmp', 'option-trafoeruptpp'
+                    ]
             };
 
         /*
@@ -115,8 +143,8 @@
          */
         var error_codes =
             ["No error",//0
-             "Error: The tuple of flags is not positive. This means that the inner polygon is not nested" +
-            " inside the outer polygon."//1
+                "Error: The tuple of flags is not positive. This means that the inner polygon is not nested" +
+                " inside the outer polygon."//1
             ];
         // @type {string} The color of a new geometric object hovering before being added.
         var NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
@@ -124,6 +152,8 @@
         var FLAVOR_COLOR_1 = style.getPropertyValue('--flavor-color-1');
         var FLAVOR_COLOR_2 = style.getPropertyValue('--flavor-color-2');
         var FLAVOR_COLOR_3 = style.getPropertyValue('--flavor-color-3');
+        var FLAVOR_COLOR_4 = style.getPropertyValue('--flavor-color-4');
+
         /*
          * @type {string} The mode that the application is in at the moment.
          * Sensible values are "addPoints", "addLines" and "standard"
@@ -145,6 +175,8 @@
         // ... the points defining the inner triangles (for the eruption flow).
         var us_2dim = [];
 
+        var convex = [];
+
         // Current coordinates of the mouse (if hovering over the SVG).
         var liveCoordinates = [0, 0];
         // Saved coordinates of the last mouse click (on the SVG).
@@ -165,23 +197,38 @@
         /* Data for the transformations of the flag tuple. After initialization, it contains
          * values for ps_2dim[t], qs_2dim[t] and us_2dim[t] for each transformation parameter t.
          */
-        var trafo_data;
+        var trafo_data = {
+            "erupt": null,
+            "bulge": null,
+            "shear": null
+        };
+
+
+        var ellipse = null;
+
+
+        /*
+         * Different types of transformations: "erupt", "bulge" and "shear" and "no_trafo".
+         */
+        var trafo_type = "no_trafo";
 
         // Width and height of the SVG object.
-        var width = Math.min(2000, document.getElementById("div-canvas").offsetWidth - 100),
-            height = Math.min(2000, innerHeight - 200);
+        var width = Math.min(2000, document.getElementById("div-canvas").offsetWidth);
+        var height = Math.min(2000, innerHeight - 200);
 
         // SVG object for data visualization, using D3.js
         var svg = d3.select("#div-canvas").append("svg")
             .attr("width", width)
             .attr("height", height)
+            .attr("id", "svg")
             .style("background-color", "#DDDDDD");
-        
+
         // The SVG listens to mouse movements and mouse clicks 
         svg.on("mousemove", mouse_move_point_or_line)
             .on("click", mouse_click_point_or_line);
 
         // The SVG has different layers which we realize by adding groups one after the other.
+        var bottom_layer = svg.append('g');
         var background_layer = svg.append('g');
         var flag_layer = svg.append('g');
         var triangle_layer = svg.append('g');
@@ -203,51 +250,108 @@
             });
         });
 
+        // The "Reset transformation" button
+        $(document).ready(function () {
+            $("#button-traforeset").click(function () {
+                t = 0;
+                document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value
+                transform_coordinates();
+            });
+        });
+
+        // The "Save Svg" button
+        $(document).ready(function () {
+            $("#button-savesvg").click(function () {
+                bottom_layer.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", height)
+                    .attr("id", "background")
+                    .attr("fill", "#DDDDDD");
+                saveSvg(document.getElementById("svg"), "flag-transformator-img.svg");
+                svg.selectAll("#background").remove();
+            });
+        });
+
         // The slider for transformation
-        var slider = document.getElementById("traforange");
-        document.getElementById("trafovalue").innerHTML = 0; // Display the default slider value
+        var slider = document.getElementById("range-trafo");
+        document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value
         slider.oninput = function () {
-            // Round to two decimals (value between -10.01 and
-            document.getElementById("trafovalue").innerHTML = Math.round((this.value / 100 + 0.00001) * 100) / 100;
             t = this.value;
-            t_str = t.toString();
-            // Update the current coordinates of the ps, qs and us.
-            ps_2dim = trafo_data[t_str]["ps"];
-            qs_2dim = trafo_data[t_str]["qs"];
-            us_2dim = trafo_data[t_str]["us"];
+            transform_coordinates();
+        };
+
+        // The dropdown menu for transformation type
+        var select_trafo = document.getElementById("select-trafo");
+        select_trafo.onchange = function () {
+            switch_trafo_type_to(select_trafo.options[select_trafo.selectedIndex].value);
+            refresh_coordinates();
             refresh_svg(false);
         };
 
         // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
         $('input[name=withInner]').change(function () {
             if ($(this).is(':checked')) {
-                draw_points(us_2dim, "u_point", FLAVOR_COLOR_1, triangle_layer);
-                draw_triangle(us_2dim, "u_line", FLAVOR_COLOR_1, triangle_layer);
+                for (let i = 0; i < us_2dim.length; i++) {
+                    draw_points(us_2dim[i], "u_point" + i.toString(), FLAVOR_COLOR_1, triangle_layer);
+                    draw_triangle(us_2dim[i], "u_line" + i.toString(), FLAVOR_COLOR_1, triangle_layer);
+                }
             } else {
-                svg.selectAll("#u_point").remove();
-                svg.selectAll("#u_line").remove();
+                for (let i = 0; i < us_2dim.length; i++) {
+                    svg.selectAll("#u_point" + i.toString()).remove();
+                    svg.selectAll("#u_line" + i.toString()).remove();
+                }
             }
         });
 
         // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
         $('input[name=withMiddle]').change(function () {
             if ($(this).is(':checked')) {
+                console.log(ps_2dim);
+                console.log(n);
+                for (let i = 1; i < n - 1; i++) {
+                    var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i + 1]];
+                    draw_triangle(points, "p_line" + (i - 1).toString(), FLAVOR_COLOR_2, triangle_layer);
+                }
                 draw_points(ps_2dim, "p_point", FLAVOR_COLOR_2, triangle_layer);
-                draw_triangle(ps_2dim, "p_line", FLAVOR_COLOR_2, triangle_layer);
             } else {
                 svg.selectAll("#p_point").remove();
-                svg.selectAll("#p_line").remove();
+                for (let i = 1; i < n - 1; i++) {
+                    svg.selectAll("#p_line" + (i - 1).toString()).remove();
+                }
             }
         });
 
-        // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
+        // Checkbox for the helper lines. Check for showing, uncheck for removing.
         $('input[name=withHelper]').change(function () {
             if ($(this).is(':checked')) {
-                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", FLAVOR_COLOR_3, background_layer)
+                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", FLAVOR_COLOR_3, background_layer);
             } else {
                 svg.selectAll("#helper_line").remove();
             }
         });
+
+        // Checkbox for the ellipse. Check for showing, uncheck for removing.
+        $('input[name=withEllipse]').change(function () {
+            if ($(this).is(':checked')) {
+                draw_triangle(ellipse, "ellipse", FLAVOR_COLOR_3, background_layer);
+            } else {
+                svg.selectAll("#ellipse").remove();
+            }
+        });
+
+        // Checkbox for the convex set. Check for showing, uncheck for removing.
+        $('input[name=withConvex]').change(function () {
+            if ($(this).is(':checked')) {
+                draw_polygon(convex, "convex", FLAVOR_COLOR_4, background_layer);
+                //draw_triangle(convex, "convex", NEW_HIGHLIGHT_COLOR, background_layer);
+            } else {
+                svg.selectAll("#convex").remove();
+            }
+        });
+
+
 
     </script>
 

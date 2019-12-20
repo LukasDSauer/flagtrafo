@@ -33,15 +33,18 @@
     <link rel="stylesheet" href="{{ url_for('static',filename='lib/normalize.css/normalize.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='lib/milligram/dist/milligram.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='styles/main.css') }}">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
 
 </head>
 <body>
 
 <main class="wrapper">
     <div class="topnav">
-        <a class="active" href="{{ url_for('home') }}">Home</a>
-        <a href="{{ url_for('graphics') }}">Projective Flag Deformator</a>
-        <a href="{{ url_for('about') }}">About</a>
+    {% for item in nav.top %}
+        <a href="{{ item.url }}" class="{{ 'active' if item.is_active else '' }}">{{ item.label }}</a>
+    {% endfor %}
     </div>
 
     {% block content %}
