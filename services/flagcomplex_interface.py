@@ -14,22 +14,6 @@ t_offset = -6.6  # This must be = (- trafo_range - 1)*t_step
 
 def init_flagcomplex_from_data(n, data, pplane, old_pplane):
     fcomplex = FlagComplex()
-    # p0 = np.array([292.75, 107.19999695, 100.])
-    # p1 = np.array([468.75, 221.19999695, 100.])
-    # p2 = np.array([329.75, 296.20001221, 100.])
-    # p3 = np.array([146.75, 222.19999695, 100.])
-    # q0 = np.array([-4.69093168e+08, -3.58196522e+08, -3.26950029e+08])
-    # q1 = np.array([8.42531086e+08, 1.90862185e+08, 1.82580029e+08])
-    # q2 = np.array([5.68916491e+08, 3.50633350e+08, 1.20240019e+08])
-    # q3 = np.array([-3.20797029e+08, -6.49864884e+08, -2.15200019e+08])
-    #
-    #
-    # fcomplex.add_flag(p0, q0)
-    # fcomplex.add_flag(p1, q1)
-    # fcomplex.add_flag(p2, q2)
-    # fcomplex.add_flag(p3, q3)
-    #
-    # fcomplex.set_projection_plane(np.array([0, 0, 1]))
 
     fcomplex.set_projection_plane(np.array(pplane))
     # The number of flags
@@ -97,46 +81,6 @@ def trafo_eruption_plus_plus(t, fcomplex, triangle0, triangle1, style, other_poi
 
 
 def compute_eruption_data_plus_plus(fcomplex, ftess):
-    # data = dict()
-    #
-    # style = "Q"
-    # triangle0 = [1, 2, 0]
-    # triangle1 = [2, 3, 0]
-    # fcomplex.refresh_setup()
-    #
-    # ftesselator = FlagTesselator(fcomplex, steps=3)
-    #
-    # other_points = copy.deepcopy(fcomplex.qs)
-    # other_points = [other_points[i - 1] for i in range(4)]
-    #
-    # fcomplex.set_subdivision([2, 3, 0], {2: [0], 3: [2, 1], 0: [3]})
-    # fcomplex.set_subdivision([1, 2, 0], {1: [0, 3], 2: [1], 0: [2]})
-    #
-    # fcomplex.erupt_complex_along_triangle(t=t_offset, triangle=triangle1, transformation_style=style)
-    # fcomplex.erupt_complex_along_triangle(t=t_offset, triangle=triangle0, transformation_style=style)
-    #
-    # for r in range(1, trafo_range_real):
-    #     fcomplex.erupt_complex_along_triangle(t=+t_step, triangle=triangle1, transformation_style=style)
-    #     fcomplex.erupt_complex_along_triangle(t=+t_step, triangle=triangle0, transformation_style=style)
-    #     fcomplex.projective_transformation = transform_four_points(fcomplex.qs, other_points)
-    #     ini, hull, tiles = ftesselator.generate_tesselation()
-    #
-    #     fcomplex.draw_complex()
-    #
-    #     drawus = []
-    #     for triangle in fcomplex.triangles:
-    #         fc_drawus = fcomplex.get_projected_us(triangle)
-    #         drawus.append(rescale_existing_points(fc_drawus))
-    #
-    #     hull = rescale_existing_points(hull)
-    #     drawps = rescale_existing_points(fcomplex.drawps)
-    #     drawqs = rescale_existing_points(fcomplex.drawqs)
-    #
-    #     t = -100 + r
-    #     data[t] = {"ps": drawps, "qs": drawqs, "us": drawus, "convex": hull}
-    #
-    # return data
-
     return compute_two_triangle_eruption_data(fcomplex, ftess, trafo_eruption_plus_plus)
 
 

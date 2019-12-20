@@ -207,7 +207,7 @@ function submit_flags_to_server(with_refresh) {
                     trafo_data[trafo_type] = data["erupt"];
                 }
                 if (n === 4) {
-                    trafo_type = "eruptpp";
+                    trafo_type = "shear";
                     select_trafo.value = "shear";
 
                     trafo_data["shear"] = data["shear"];
@@ -588,6 +588,20 @@ function order_of_magnitude(n) {
     var order = Math.floor(Math.log(n) / Math.LN10
         + 0.000000001); // because float math sucks like that
     return Math.pow(10, order);
+}
+
+function saveSvg(svgEl, name) {
+    svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");    var svgData = svgEl.outerHTML;
+    console.log(svgData);
+    var preface = '<?xml version="1.0" standalone="no"?>\r\n';
+    var svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
+    var svgUrl = URL.createObjectURL(svgBlob);
+    var downloadLink = document.createElement("a");
+    downloadLink.href = svgUrl;
+    downloadLink.download = name;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
 }
 
 

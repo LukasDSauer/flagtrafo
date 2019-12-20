@@ -2,18 +2,34 @@
 <html lang="en" dir="ltr">
 <head>
     <meta charset="utf-8">
-    <title>Projective Flag Deformator | Home</title>
+    <title>Flag Transformator | Home</title>
 </head>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <body>
 {% extends "template.html" %}
 {% block content %}
+    <section class="container" id="introduction">
+        <h1 class="title">Welcome to the Flag Transformator!</h1>
+        <div class="row">
+        <div class="column-75">
+            <p>
+                This small application shows different transformations of flags in the projective space
+                \(\mathbb{RP}^2\).
+                Draw flags by yourself, transform them using the eruption flow, the shear flow and the bulge flow, and
+                generate convex sets by iterative reflections.
+            </p>
+            <p>
+                We have a <a href="{{ url_for('about') }}">brief mathematical introduction</a> about the subject, you
+                can read some <a href="{{ url_for('about') }}">tricks</a> on how to use the application, or simply
+            </p>
+            <a class="button download" href="{{ url_for('graphics') }}" title="Download Milligram" style="horiz-align: center">Get started!</a>
 
-    <section class="container" id="examples">
-        <h1 class="title">Welcome!</h1>
-        <p>
-            This small application shows different transformations of flags in the projective space.
-        </p>
-    <a class="button download" href="{{ url_for('graphics')}}" title="Download Milligram">Let's get started!</a>
+        </div>
+        <div class="column-20">
+            <img src="{{ url_for('static', filename='images/eruption-trafo_logo.png') }}" style="width: 75%">
+        </div>
+            </div>
     </section>
 
 

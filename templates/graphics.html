@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
     <meta charset="utf-8">
-    <title>Flag complex transformator</title>
+    <title>Flag Transformator | Application</title>
 
     <script type="text/javascript" src="http://www.json.org/json2.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -52,8 +52,10 @@
                     <label>Trafo type
                         <select id="select-trafo">
                             <option id="option-trafoerupt" value="erupt" style="display:none">Eruption flow</option>
-                            <option id="option-trafoeruptmp" value="eruptmp" style="display:none">Eruption flow (-/+)</option>
-                            <option id="option-trafoeruptpp" value="eruptpp" style="display:none">Eruption flow (+/+)</option>
+                            <option id="option-trafoeruptmp" value="eruptmp" style="display:none">Eruption flow (-/+)
+                            </option>
+                            <option id="option-trafoeruptpp" value="eruptpp" style="display:none">Eruption flow (+/+)
+                            </option>
                             <option id="option-trafobulge" value="bulge" style="display:none">Bulge flow</option>
                             <option id="option-trafoshear" value="shear" style="display:none">Shear flow</option>
                         </select>
@@ -64,7 +66,7 @@
         </div>
 
         <section class="row">
-            <div class="column column-50">
+            <div class="column column-40">
                 <form name="projection_plane_form" id="form-pplane" style="display:none">
                     <fieldset>
                         <label form="projection_plane_form">Projection plane:
@@ -76,16 +78,20 @@
                         <input type="text" name="ppz" placeholder="z" id="input-ppz"
                                style="display: inline; white-space: nowrap; width: 15%">
                         <!--Type must be button, not submit. Otherwise, the page would be refreshed every time.-->
-                        <input class="button-primary" type="button" value="Set" id="button-pplane">
+                        <input class="button button-outline" type="button" value="Set" id="button-pplane">
                     </fieldset>
                 </form>
             </div>
-            <div class="column column-50" id="div-trafo" style="display:none">
+            <div class="column column-40" id="div-trafo" style="display:none">
                 <label>Transformation value: <span id="trafovalue">0</span>
                 </label>
                 <input type="range" min="-70" max="70" value="0" class="slider" id="range-trafo"/>
-                <input class="button-primary" type="button" value="Reset" id="button-traforeset">
+                <input class="button button-outline" type="button" value="Reset" id="button-traforeset">
 
+            </div>
+            <div class="column column-20" id="div-savesvg" style="display:none">
+                <label>Save to .svg-File</label>
+                <input class="button" type="button" value="Save" id="button-savesvg">
             </div>
         </section>
     </section>
@@ -123,10 +129,10 @@
                     'input-withmiddle', 'input-withhelper', 'input-withellipse',
                     'input-withconvex'],
                 "show_for_all_n": ['button-addflag', 'form-pplane', 'input-withconvex',
-                    'input-withinner', 'input-withmiddle', 'div-checkstriangle'],
+                    'input-withinner', 'input-withmiddle', 'div-checkstriangle', "div-savesvg"],
                 "3":
                     ['div-trafo', 'div-select-trafo', 'option-trafoerupt', 'input-withinner',
-                    'input-withhelper'],
+                        'input-withhelper'],
                 "4":
                     ['div-trafo', 'div-select-trafo', 'option-trafobulge', 'option-trafoshear',
                         'input-withinner', 'input-withellipse', 'option-trafoeruptmp', 'option-trafoeruptpp'
@@ -215,6 +221,7 @@
         var svg = d3.select("#div-canvas").append("svg")
             .attr("width", width)
             .attr("height", height)
+            .attr("id", "svg")
             .style("background-color", "#DDDDDD");
 
         // The SVG listens to mouse movements and mouse clicks 
@@ -222,6 +229,7 @@
             .on("click", mouse_click_point_or_line);
 
         // The SVG has different layers which we realize by adding groups one after the other.
+        var bottom_layer = svg.append('g');
         var background_layer = svg.append('g');
         var flag_layer = svg.append('g');
         var triangle_layer = svg.append('g');
@@ -249,6 +257,21 @@
                 t = 0;
                 document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value
                 transform_coordinates();
+            });
+        });
+
+        // The "Reset transformation" button
+        $(document).ready(function () {
+            $("#button-savesvg").click(function () {
+                bottom_layer.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", height)
+                    .attr("id", "background")
+                    .attr("fill", "#DDDDDD");
+                saveSvg(document.getElementById("svg"), "flag-transformator-img.svg");
+                svg.selectAll("#background").remove();
             });
         });
 
