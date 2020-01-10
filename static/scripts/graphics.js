@@ -152,7 +152,7 @@ function submit_projection_plane_button() {
  * @param type a string that specifies the type to switch to.
  * "erupt" for n=3
  * "shear", "bulge", "eruptmp", "eruptpp" for n=4
- * "notrafo" for other n.
+ * "no_trafo" for other n.
  */
 function switch_trafo_type_to(type) {
     trafo_type = type;

@@ -6,8 +6,6 @@
 
     <script type="text/javascript" src="http://www.json.org/json2.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="{{ url_for('static',filename='scripts/graphics.js') }}"></script>
-    <script src="{{ url_for('static',filename='scripts/listeners.js') }}"></script>
     <script type="text/javascript" src="//d3js.org/d3.v5.min.js"></script>
 </head>
 <body>
@@ -108,12 +106,13 @@
         </section>
     </section>
     </body>
-
+    <script src="{{ url_for('static',filename='scripts/graphics.js') }}"></script>
+    <script src="{{ url_for('static',filename='scripts/listeners.js') }}"></script>
     <script type="text/javascript">
         /**
          * Style elements
          */
-        // Access to all the CSS style modifications of the HTML document.
+            // Access to all the CSS style modifications of the HTML document.
         const style = window.getComputedStyle(document.body);
         // Width and height of the SVG object.
         const width = document.getElementById("div-canvas").offsetWidth;
@@ -121,7 +120,7 @@
         /**
          * Colors
          */
-        // @type {string} The color of a new geometric object hovering before being added.
+            // @type {string} The color of a new geometric object hovering before being added.
         const NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
         // @type {string} Different colors for special occasions.
         const FLAVOR_COLOR_1 = style.getPropertyValue('--flavor-color-1');
@@ -131,13 +130,14 @@
         /**
          * Elements of the website
          */
-        const slider = document.getElementById("range-trafo");
+        var slider = document.getElementById("range-trafo");
+        slider.value = 0;
         const select_trafo = document.getElementById("select-trafo");
 
         /**
          * Applications constants
          */
-        // The maximal number of flags that can be drawn on the canvas. This set by the server.
+            // The maximal number of flags that can be drawn on the canvas. This set by the server.
         const n_max = {{ n_max }};
         /*
          * A JSON object of ids of UI elements.
@@ -151,7 +151,7 @@
                 "all_elements": ['button-addflag', 'div-checks', 'div-trafo',
                     'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withinner',
                     'input-withmiddle', 'input-withhelper', 'input-withellipse',
-                    'input-withconvex'],
+                    'input-withconvex', "div-savesvg"],
                 "show_for_all_n": ['button-addflag', 'form-pplane', 'input-withconvex',
                     'input-withinner', 'input-withmiddle', 'div-checks', "div-savesvg"],
                 "3":
@@ -170,7 +170,7 @@
             ["No error",//0
                 "Error: The tuple of flags is not positive. This means that the inner polygon is not nested" +
                 " inside the outer polygon.",//1
-                "Error: Too many flags. You can not submit more than"+ n_max + " flags. The computation has been cancelled by the server."//2
+                "Error: Too many flags. You can not submit more than" + n_max + " flags. The computation has been cancelled by the server."//2
 
             ];
 
@@ -217,7 +217,6 @@
             "shear": null
         };
 
-
         // Current coordinates of the mouse (if hovering over the SVG).
         var liveCoordinates = [0, 0];
         // Saved coordinates of the last mouse click (on the SVG).
@@ -248,12 +247,12 @@
          *
          * @type d3.js object
          */
-        // SVG object for data visualization, using D3.js
+            // SVG object for data visualization, using D3.js
         var svg = d3.select("#div-canvas").append("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .attr("id", "svg")
-            .style("background-color", "#DDDDDD");
+                .attr("width", width)
+                .attr("height", height)
+                .attr("id", "svg")
+                .style("background-color", "#DDDDDD");
 
         // The SVG has different layers which we realize by adding groups one after the other.
         var bottom_layer = svg.append('g');
@@ -261,8 +260,11 @@
         var flag_layer = svg.append('g');
         var triangle_layer = svg.append('g');
 
-        // In particular, this makes the svg listen to mouse movements and clicks.
-        switch_program_mode_to("addFlags");
+        // Make the svg listen to mouse clicks and mouse movements.
+        svg.on("mousemove", mouse_move_point_or_line)
+               .on("click", mouse_click_point_or_line);
+        // Make all the buttons, sliders etc. listen to actions.
+        set_listeners();
     </script>
 
 {% endblock %}

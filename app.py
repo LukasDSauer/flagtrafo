@@ -66,14 +66,17 @@ def get_transformation_data():
     data = request.get_json()
     pplane = data["pplane"]
     old_pplane = data["oldpplane"]
+    # The number of flags
     n = len(data['ps'])
+
+    # Cancel computation if there are too many flags
     if n > 10:
         app.logger.info("Too many flags. Cancelling computation!")
         data['error'] = 2
         return jsonify(data)
 
+    # Set up for the transformation and tesselation computations
     tesselation_steps = 3
-
     t_step = 0.1
     trafo_range = {"erupt": {"trafo_range": 100, "t_step": t_step},
                    "shear": {"trafo_range": 80, "t_step": t_step},
@@ -82,6 +85,7 @@ def get_transformation_data():
                    "eruptpp": {"trafo_range": 50, "t_step": t_step},
                    "no_trafo": {"trafo_range": 0, "t_step": 0}}
 
+    # Flag complex object to perform transformations on
     fcomplex = init_flagcomplex_from_data(n, data, pplane, old_pplane)
     app.logger.info("Initialized flag complex with " + str(n) + " flags and projection plane " + str(pplane) + ".")
 
@@ -89,6 +93,7 @@ def get_transformation_data():
     if not fcomplex.is_complex_positive():
         app.logger.info("Flag complex not positive!")
         data['error'] = 1
+    # If there is no problem, calculate the transformation data according to the number of flags.
     else:
         data['error'] = 0
         # Computing eruption flow data
