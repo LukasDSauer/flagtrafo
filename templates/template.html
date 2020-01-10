@@ -8,27 +8,27 @@
           content="A web application for visualizing transformations of flags in the projective plane.">
     <title>HITS | Flag deformator.</title>
     <!-- ****** faviconit.com favicons ****** -->
-	<link rel="shortcut icon" href="{{ url_for('static',filename='images/favicon.ico') }}">
-	<link rel="icon" sizes="16x16 32x32 64x64" href="{{ url_for('static',filename='images/favicon.ico') }}">
-	<link rel="icon" type="image/png" sizes="196x196" href="{{ url_for('static',filename='images/favicon-192.png') }}">
-	<link rel="icon" type="image/png" sizes="160x160" href="{{ url_for('static',filename='images/favicon-160.png') }}">
-	<link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static',filename='images/favicon-96.png') }}">
-	<link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static',filename='images/favicon-64.png') }}">
-	<link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static',filename='images/favicon-32.png') }}">
-	<link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static',filename='images/favicon-16.png') }}">
-	<link rel="apple-touch-icon" href="{{ url_for('static',filename='images/favicon-57.png') }}">
-	<link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static',filename='images/favicon-114.png') }}">
-	<link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static',filename='images/favicon-72.png') }}">
-	<link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static',filename='images/favicon-144.png') }}">
-	<link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static',filename='images/favicon-60.png') }}">
-	<link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static',filename='images/favicon-120.png') }}">
-	<link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static',filename='images/favicon-76.png') }}">
-	<link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static',filename='images/favicon-152.png') }}">
-	<link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static',filename='images/favicon-180.png') }}">
-	<meta name="msapplication-TileColor" content="#FFFFFF">
-	<meta name="msapplication-TileImage" content="{{ url_for('static',filename='images/favicon-144.png') }}">
-	<meta name="msapplication-config" content="{{ url_for('static',filename='images/browserconfig.xml') }}">
-	<!-- ****** faviconit.com favicons ****** -->
+    <link rel="shortcut icon" href="{{ url_for('static',filename='images/favicon.ico') }}">
+    <link rel="icon" sizes="16x16 32x32 64x64" href="{{ url_for('static',filename='images/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="196x196" href="{{ url_for('static',filename='images/favicon-192.png') }}">
+    <link rel="icon" type="image/png" sizes="160x160" href="{{ url_for('static',filename='images/favicon-160.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static',filename='images/favicon-96.png') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static',filename='images/favicon-64.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static',filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static',filename='images/favicon-16.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static',filename='images/favicon-57.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static',filename='images/favicon-114.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static',filename='images/favicon-72.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static',filename='images/favicon-144.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static',filename='images/favicon-60.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static',filename='images/favicon-120.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static',filename='images/favicon-76.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static',filename='images/favicon-152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static',filename='images/favicon-180.png') }}">
+    <meta name="msapplication-TileColor" content="#FFFFFF">
+    <meta name="msapplication-TileImage" content="{{ url_for('static',filename='images/favicon-144.png') }}">
+    <meta name="msapplication-config" content="{{ url_for('static',filename='images/browserconfig.xml') }}">
+    <!-- ****** faviconit.com favicons ****** -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
     <link rel="stylesheet" href="{{ url_for('static',filename='lib/normalize.css/normalize.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='lib/milligram/dist/milligram.css') }}">
@@ -42,9 +42,9 @@
 
 <main class="wrapper">
     <div class="topnav">
-    {% for item in nav.top %}
-        <a href="{{ item.url }}" class="{{ 'active' if item.is_active else '' }}">{{ item.label }}</a>
-    {% endfor %}
+        {% for item in nav.top %}
+            <a href="{{ item.url }}" class="{{ 'active' if item.is_active else '' }}">{{ item.label }}</a>
+        {% endfor %}
     </div>
 
     {% block content %}

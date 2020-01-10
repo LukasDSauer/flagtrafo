@@ -7,7 +7,7 @@
  --> Seems alright to me. The browser simply doesn't depict anything when the line is at infinity. Could
      the error message in the browser console be a problem anyway?
 
-* Adding licences to alien software parts.
+* Adding licences to alien software parts. Done for milligram and normalize.
 
 * Shear flow: Unusal orderings of the tuple: 0,2, 1, 3.
  Is the behaviour reasonable or not.
@@ -16,15 +16,17 @@
 
 * Ellipse for case n = 4 and shear flow --> Done!
 
-* Eruption flow for case n=4.
+* Eruption flow for case n=4. --> Done!
 
 * Convex set for cases n > 4. --> Done!
 
-* Problem: Shear flow is an option for n=3.
+* Problem: Shear flow is an option for n=3. --> Done!
 
 * Is it okay to use var for my variables?
 
 * Include external libraries.
+
+* Remove debug=True.
 
 
 ## Ansible install:

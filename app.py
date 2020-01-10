@@ -10,13 +10,16 @@ from services.flagcomplex_interface import init_flagcomplex_from_data, \
 app = Flask(__name__)
 app.config['DEBUG'] = True
 
+n_max = 10
+
+
 FlaskJSON(app)
 nav = Navigation(app)
 
 nav.Bar('top', [
     nav.Item('Home', 'home'),
     nav.Item('Application', 'graphics'),
-    nav.Item('Tricks','tricks'),
+    nav.Item('Tips and tricks', 'tricks'),
     nav.Item('Mathematical Background', 'math_background'),
     nav.Item('About', 'about')
 ])
@@ -26,33 +29,36 @@ Error codes:
 
 0 = No error.
 1 = The tuple of flags is not positive.
+2 = Too many flags.
 """
 
-
+# The home page
 @app.route('/')
 def home():
     return render_template("home.html")
 
-
+# The page with all the interactive parts of the app.
 @app.route('/graphics')
 def graphics():
-    return render_template("graphics.html")
+    return render_template("graphics.html", n_max=n_max)
 
+# Some mathematical explanations
 @app.route('/math-background')
 def math_background():
     return render_template("math_background.html")
 
+# Tips and tricks for the app
 @app.route('/tricks')
 def tricks():
     return render_template("tricks.html")
-
 
 
 @app.route("/about")
 def about():
     return render_template("about.html")
 
-
+# Server request for calculating the transformation data. This is called by
+# the graphics page.
 @app.route("/flagcomplex/get_transformation_data", methods=['POST'])
 def get_transformation_data():
     # The input data from the post request contains information about the points "ps", the line they are on "ds",
@@ -61,6 +67,11 @@ def get_transformation_data():
     pplane = data["pplane"]
     old_pplane = data["oldpplane"]
     n = len(data['ps'])
+    if n > 10:
+        app.logger.info("Too many flags. Cancelling computation!")
+        data['error'] = 2
+        return jsonify(data)
+
     tesselation_steps = 3
 
     t_step = 0.1

@@ -7,15 +7,22 @@
     <script type="text/javascript" src="http://www.json.org/json2.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="{{ url_for('static',filename='scripts/graphics.js') }}"></script>
+    <script src="{{ url_for('static',filename='scripts/listeners.js') }}"></script>
+    <script type="text/javascript" src="//d3js.org/d3.v5.min.js"></script>
 </head>
 <body>
 {% extends "template.html" %}
 {% block content %}
     <section class="container">
+        <!-- This row contains some hints on how to use the application. -->
         <section class="row-top">
             <b id="b-hinttype">Hint: </b><span id="span-modeinfo">Hover over grey canvas to start. Left click to add
                 point.</span>
         </section>
+
+        <!-- This row contains two columns.
+             On the left, some editing tools: "Submit flags", "Change trafo type" and some checkboxes.
+             On the right, the SVG element with all the visualizations. -->
         <div class="row">
             <div class="column column-20">
                 <form>
@@ -65,6 +72,11 @@
             <div class="column column-80" id="div-canvas"></div>
         </div>
 
+        <!-- This row further editing elements.
+        The form that changes the projection plane on the left.
+        The slider for applying the transformation in the middle.
+        The button for saving the svg on the right.
+        -->
         <section class="row">
             <div class="column column-40">
                 <form name="projection_plane_form" id="form-pplane" style="display:none">
@@ -96,23 +108,37 @@
         </section>
     </section>
     </body>
-    <script type="text/javascript" src="//d3js.org/d3.v5.min.js"></script>
+
     <script type="text/javascript">
         /**
-         * Fixed variables
+         * Style elements
          */
-            // Access to all the CSS style modifications of the HTML document.
-        var style = window.getComputedStyle(document.body);
+        // Access to all the CSS style modifications of the HTML document.
+        const style = window.getComputedStyle(document.body);
+        // Width and height of the SVG object.
+        const width = document.getElementById("div-canvas").offsetWidth;
+        const height = innerHeight - 200;
+        /**
+         * Colors
+         */
+        // @type {string} The color of a new geometric object hovering before being added.
+        const NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
+        // @type {string} Different colors for special occasions.
+        const FLAVOR_COLOR_1 = style.getPropertyValue('--flavor-color-1');
+        const FLAVOR_COLOR_2 = style.getPropertyValue('--flavor-color-2');
+        const FLAVOR_COLOR_3 = style.getPropertyValue('--flavor-color-3');
+        const FLAVOR_COLOR_4 = style.getPropertyValue('--flavor-color-4');
+        /**
+         * Elements of the website
+         */
+        const slider = document.getElementById("range-trafo");
+        const select_trafo = document.getElementById("select-trafo");
 
-        //The numbers of flags for which there is some kind of interaction with the server.
-        var n_submit = [3, 4];
-        // The maximal number of flags that can be drawn on the canvas.
-        var n_max = 10;
-
-        var trafo_range = {"notrafo": {"trafo_range": 0, "t_step": 0}};
-
-
-
+        /**
+         * Applications constants
+         */
+        // The maximal number of flags that can be drawn on the canvas. This set by the server.
+        const n_max = {{ n_max }};
         /*
          * A JSON object of ids of UI elements.
          *
@@ -120,7 +146,7 @@
          * ui_elements["show_for_all_n"] is a list of all elements that will be shown for any number of flags.
          * ui_elements["3"] is the list of all elements that should be shown when we have 3 flags on the canvas.
          */
-        var ui_elements =
+        const ui_elements =
             {
                 "all_elements": ['button-addflag', 'div-checks', 'div-trafo',
                     'div-select-trafo', 'form-pplane', 'option-trafoerupt', 'input-withinner',
@@ -136,32 +162,36 @@
                         'input-withinner', 'input-withellipse', 'option-trafoeruptmp', 'option-trafoeruptpp'
                     ]
             };
-
         /*
          * A list of error codes.
          * For example, error_codes[1] is the error message that belongs to error code 1.
          */
-        var error_codes =
+        const error_codes =
             ["No error",//0
                 "Error: The tuple of flags is not positive. This means that the inner polygon is not nested" +
-                " inside the outer polygon."//1
-            ];
-        // @type {string} The color of a new geometric object hovering before being added.
-        var NEW_HIGHLIGHT_COLOR = style.getPropertyValue('--new-highlight-color');
-        // @type {string} Different colors for special occasions.
-        var FLAVOR_COLOR_1 = style.getPropertyValue('--flavor-color-1');
-        var FLAVOR_COLOR_2 = style.getPropertyValue('--flavor-color-2');
-        var FLAVOR_COLOR_3 = style.getPropertyValue('--flavor-color-3');
-        var FLAVOR_COLOR_4 = style.getPropertyValue('--flavor-color-4');
+                " inside the outer polygon.",//1
+                "Error: Too many flags. You can not submit more than"+ n_max + " flags. The computation has been cancelled by the server."//2
 
+            ];
+
+        /**
+         * Application variables
+         */
         /*
          * @type {string} The mode that the application is in at the moment.
-         * Sensible values are "addPoints", "addLines" and "standard"
+         * Sensible values are "addFlags", "addPoints", "addLines" and "standard".
+         *
+         * Depending on the mode, the behaviour of the website changes.
+         *
+         * "addFlags" removes some interface elements and automatically switches to "addPoints". Furthermore, it makes
+         * the svg listen to mouse movements and clicks.
+         * "addPoints" allows you to draw new points on the svg object.
+         * "addLines" allows you to draw lines on the svg object.
+         * "standard" allows you to perform transformations on the drawn object.
          */
         var program_mode = "addPoints";
         // @type {int} The number of flags that are currently depicted on canvas.
         var n = 0;
-
         /*
          * Two-dimensional projections of...
          */
@@ -174,8 +204,19 @@
         var qs_2dim = [];
         // ... the points defining the inner triangles (for the eruption flow).
         var us_2dim = [];
-
+        // ... the convex set generated by the middle polygon (the polygon spanned by the ps).
         var convex = [];
+        // ... the ellipse on which on of the points orbits for the shear flow.
+        var ellipse = null;
+        /* Data for the transformations of the flag tuple. After initialization, it contains
+         * values for ps_2dim[t], qs_2dim[t] and us_2dim[t] for each transformation parameter t.
+         */
+        var trafo_data = {
+            "erupt": null,
+            "bulge": null,
+            "shear": null
+        };
+
 
         // Current coordinates of the mouse (if hovering over the SVG).
         var liveCoordinates = [0, 0];
@@ -187,35 +228,26 @@
          * projective points and lines are projected for visualization.
          */
         var proj_plane = [0, 0, 1];
+        // The projection plane that was in use before the current one.
         var old_proj_plane = [0, 0, 1];
 
-        // The transformation parameter, ranging from -1000 to +1000.
+        // The transformation parameter, its range depends on trafo_range.
         var t = 0;
         // The same as a string.
         var t_str = "0";
-
-        /* Data for the transformations of the flag tuple. After initialization, it contains
-         * values for ps_2dim[t], qs_2dim[t] and us_2dim[t] for each transformation parameter t.
-         */
-        var trafo_data = {
-            "erupt": null,
-            "bulge": null,
-            "shear": null
-        };
-
-
-        var ellipse = null;
-
-
+        // Trafo range is the maximal value and the step width that a transformations parameter can take for
+        // a certain trafo type. It is changed after server requests.
+        var trafo_range = {"notrafo": {"trafo_range": 0, "t_step": 0}};
         /*
-         * Different types of transformations: "erupt", "bulge" and "shear" and "no_trafo".
+         * Different types of transformations: "erupt", "bulge", "shear", "eruptmp", "eruptpp" and "no_trafo".
          */
         var trafo_type = "no_trafo";
 
-        // Width and height of the SVG object.
-        var width = Math.min(2000, document.getElementById("div-canvas").offsetWidth);
-        var height = Math.min(2000, innerHeight - 200);
-
+        /**
+         * The svg element contains all the visualizations.
+         *
+         * @type d3.js object
+         */
         // SVG object for data visualization, using D3.js
         var svg = d3.select("#div-canvas").append("svg")
             .attr("width", width)
@@ -223,136 +255,14 @@
             .attr("id", "svg")
             .style("background-color", "#DDDDDD");
 
-        // The SVG listens to mouse movements and mouse clicks 
-        svg.on("mousemove", mouse_move_point_or_line)
-            .on("click", mouse_click_point_or_line);
-
         // The SVG has different layers which we realize by adding groups one after the other.
         var bottom_layer = svg.append('g');
         var background_layer = svg.append('g');
         var flag_layer = svg.append('g');
         var triangle_layer = svg.append('g');
 
-        /**
-         * Listeners for buttons and sliders.
-         */
-        // The "Add flag" button
-        $(document).ready(function () {
-            $("#button-addflag").click(function () {
-                submit_flags_button();
-            });
-        });
-
-        // The "Submit projection plane" button
-        $(document).ready(function () {
-            $("#button-pplane").click(function () {
-                submit_projection_plane_button();
-            });
-        });
-
-        // The "Reset transformation" button
-        $(document).ready(function () {
-            $("#button-traforeset").click(function () {
-                t = 0;
-                document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value
-                transform_coordinates();
-            });
-        });
-
-        // The "Save Svg" button
-        $(document).ready(function () {
-            $("#button-savesvg").click(function () {
-                bottom_layer.append("rect")
-                    .attr("x", 0)
-                    .attr("y", 0)
-                    .attr("width", width)
-                    .attr("height", height)
-                    .attr("id", "background")
-                    .attr("fill", "#DDDDDD");
-                saveSvg(document.getElementById("svg"), "flag-transformator-img.svg");
-                svg.selectAll("#background").remove();
-            });
-        });
-
-        // The slider for transformation
-        var slider = document.getElementById("range-trafo");
-        document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value
-        slider.oninput = function () {
-            t = this.value;
-            transform_coordinates();
-        };
-
-        // The dropdown menu for transformation type
-        var select_trafo = document.getElementById("select-trafo");
-        select_trafo.onchange = function () {
-            switch_trafo_type_to(select_trafo.options[select_trafo.selectedIndex].value);
-            refresh_coordinates();
-            refresh_svg(false);
-        };
-
-        // Checkbox for the inner triangle. Check for showing inner triangle, uncheck for removing.
-        $('input[name=withInner]').change(function () {
-            if ($(this).is(':checked')) {
-                for (let i = 0; i < us_2dim.length; i++) {
-                    draw_points(us_2dim[i], "u_point" + i.toString(), FLAVOR_COLOR_1, triangle_layer);
-                    draw_triangle(us_2dim[i], "u_line" + i.toString(), FLAVOR_COLOR_1, triangle_layer);
-                }
-            } else {
-                for (let i = 0; i < us_2dim.length; i++) {
-                    svg.selectAll("#u_point" + i.toString()).remove();
-                    svg.selectAll("#u_line" + i.toString()).remove();
-                }
-            }
-        });
-
-        // Checkbox for the middle triangle. Check for showing middle triangle, uncheck for removing.
-        $('input[name=withMiddle]').change(function () {
-            if ($(this).is(':checked')) {
-                console.log(ps_2dim);
-                console.log(n);
-                for (let i = 1; i < n - 1; i++) {
-                    var points = [ps_2dim[0], ps_2dim[i], ps_2dim[i + 1]];
-                    draw_triangle(points, "p_line" + (i - 1).toString(), FLAVOR_COLOR_2, triangle_layer);
-                }
-                draw_points(ps_2dim, "p_point", FLAVOR_COLOR_2, triangle_layer);
-            } else {
-                svg.selectAll("#p_point").remove();
-                for (let i = 1; i < n - 1; i++) {
-                    svg.selectAll("#p_line" + (i - 1).toString()).remove();
-                }
-            }
-        });
-
-        // Checkbox for the helper lines. Check for showing, uncheck for removing.
-        $('input[name=withHelper]').change(function () {
-            if ($(this).is(':checked')) {
-                draw_helper_lines(ps_2dim, qs_2dim, "helper_line", FLAVOR_COLOR_3, background_layer);
-            } else {
-                svg.selectAll("#helper_line").remove();
-            }
-        });
-
-        // Checkbox for the ellipse. Check for showing, uncheck for removing.
-        $('input[name=withEllipse]').change(function () {
-            if ($(this).is(':checked')) {
-                draw_triangle(ellipse, "ellipse", FLAVOR_COLOR_3, background_layer);
-            } else {
-                svg.selectAll("#ellipse").remove();
-            }
-        });
-
-        // Checkbox for the convex set. Check for showing, uncheck for removing.
-        $('input[name=withConvex]').change(function () {
-            if ($(this).is(':checked')) {
-                draw_polygon(convex, "convex", FLAVOR_COLOR_4, background_layer);
-                //draw_triangle(convex, "convex", NEW_HIGHLIGHT_COLOR, background_layer);
-            } else {
-                svg.selectAll("#convex").remove();
-            }
-        });
-
-
-
+        // In particular, this makes the svg listen to mouse movements and clicks.
+        switch_program_mode_to("addFlags");
     </script>
 
 {% endblock %}

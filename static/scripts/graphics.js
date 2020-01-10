@@ -1,12 +1,13 @@
 /*
  * Functions handling interactive site elements.
  */
+
 /**
- * Function handling the "Submit flags" button. If the site was in the "addPoints" or "addLines" mode,
- * it sends the new flags to the server using the submit_flags_to_server() function.
+ * This function is used to switch from one program mode to the next. It updates GUI elements accordingly,
+ * removes superfluous elements from the svg...
  *
- * If the site was in the "standard" mode before, it switches to "addPoints" modes and enables
- * the user to hover new points over the canvas.
+ * @param mode a string with the name of the mode to switch to. Reasonable values are "standard", "addFlags",
+ * "addPoints" and "addLines".
  */
 function switch_program_mode_to(mode) {
     if (mode === "standard") {
@@ -22,8 +23,6 @@ function switch_program_mode_to(mode) {
     }
     if (mode === "addFlags") {
         if (us_2dim != null) {
-
-
             for (let i = 0; i < us_2dim.length; i++) {
                 svg.selectAll("#u_point" + i.toString()).remove();
                 svg.selectAll("#u_line" + i.toString()).remove();
@@ -57,6 +56,13 @@ function switch_program_mode_to(mode) {
 
 }
 
+/**
+ * Function handling the "Submit flags" button. If the site was in the "addPoints" or "addLines" mode,
+ * it sends the new flags to the server using the submit_flags_to_server() function.
+ *
+ * If the site was in the "standard" mode before, it switches to "addPoints" modes and enables
+ * the user to hover new points over the canvas.
+ */
 function submit_flags_button() {
     if (program_mode === "addPoints" || program_mode === "addLines") {
         if (n > 2) {
@@ -92,9 +98,9 @@ function mouse_move_point_or_line() {
  * Furthermore, it switches mode to "addLines" resp. "addPoints" to enable adding further objects.
  */
 function mouse_click_point_or_line() {
-    if (program_mode == "addPoints") {
+    if (program_mode === "addPoints") {
         switch_program_mode_to("addLines");
-    } else if (program_mode == "addLines") {
+    } else if (program_mode === "addLines") {
         if (n <= n_max) {
             svg.selectAll("#newline")
                 .style('stroke', '#393939')
@@ -140,12 +146,23 @@ function submit_projection_plane_button() {
     }
 }
 
+/**
+ * Switches the transformation type.
+ *
+ * @param type a string that specifies the type to switch to.
+ * "erupt" for n=3
+ * "shear", "bulge", "eruptmp", "eruptpp" for n=4
+ * "notrafo" for other n.
+ */
 function switch_trafo_type_to(type) {
     trafo_type = type;
     select_trafo.value = type;
 
+    // The range of the slider may be different for different trafo types.
     document.getElementById("range-trafo").max = trafo_range[trafo_type]["trafo_range"];
     document.getElementById("range-trafo").min = -trafo_range[trafo_type]["trafo_range"];
+
+    // The shear flow has a unique GUI element.
     if (trafo_type === 'shear') {
         document.getElementById('input-withellipse').style.display = "block";
     } else {
@@ -154,6 +171,9 @@ function switch_trafo_type_to(type) {
     }
 }
 
+/**
+ * Updates the coordinates with respect to the new value t.
+ */
 function transform_coordinates() {
     t_str = t.toString();
     // Basically we want t*t_step, but this sometimes gives us long floating points numbers, so we
@@ -164,6 +184,9 @@ function transform_coordinates() {
     refresh_svg(false);
 }
 
+/**
+ * Refreshes coordinates. Usually called when trafo_type, the parameter t, or the data itself has been changed.
+ */
 function refresh_coordinates() {
     ps_2dim = trafo_data[trafo_type][t_str]["ps"];
     qs_2dim = trafo_data[trafo_type][t_str]["qs"];// From now on, we can use the qs for the ds, as they simply are another point on the line,
@@ -287,6 +310,7 @@ function refresh_svg() {
  * @param data1: another array of 2-dim arrays (point coordinates)
  * @param id: an id string for identifying the lines later
  * @param color: a color string specifying the object's color
+ * @param layer: the layer to which the lines will be saved (i.e. a group of the svg element)
  */
 function draw_infinite_lines(data0, data1, id, color, layer) {
     // We will not draw the line between point0 and point1
@@ -328,6 +352,7 @@ function draw_infinite_lines(data0, data1, id, color, layer) {
  * @param data: an array of 2-dim arrays
  * @param id: an id string for identifying the points later
  * @param color: a color string specifying the object's color
+ * @param layer: the layer to which the points will be saved (i.e. a group of the svg element)
  */
 function draw_points(data, id, color, layer) {
     var circle = layer.selectAll("#" + id)
@@ -355,6 +380,7 @@ function draw_points(data, id, color, layer) {
  * @param data: a 3-dim array of 2-dim arrays
  * @param id: an id string for identifying the triangle's lines later
  * @param color: a color string specifying the object's color
+ * @param layer: the layer to which the lines will be saved (i.e. a group of the svg element)
  */
 function draw_triangle(data, id, color, layer) {
     for (let i = 0; i < data.length; i++) {
@@ -371,9 +397,11 @@ function draw_triangle(data, id, color, layer) {
 /**
  * draws helper lines between the points in the middle triangle and in the outer triangle
  *
- * @param data: a 3-dim array of 2-dim arrays
+ * @param data_middle: a 3-dim array of 2-dim arrays (the middle triangle)
+ * @param data_outer: a 3-dim array of 2-dim arrays (the outer triangle)
  * @param id: an id string for identifying the lines later
  * @param color: a color string specifying the object's color
+ * @param layer: the layer to which the lines will be saved (i.e. a group of the svg element)
  */
 function draw_helper_lines(data_middle, data_outer, id, color, layer) {
     for (var i = 0; data_middle.length - 1; i++) {
@@ -387,6 +415,14 @@ function draw_helper_lines(data_middle, data_outer, id, color, layer) {
     }
 }
 
+/**
+ * draws a filled polygon along the points specified in data
+ *
+ * @param data: an array of 3-dim arrays
+ * @param id: an id string for identifying the polygon later
+ * @param color: a color string specifying the object's color
+ * @param layer: the layer to which the polygon will be saved (i.e. a group of the svg element)
+ */
 function draw_polygon(data, id, color, layer) {
     layer.selectAll(id)
         .data([data])
@@ -404,6 +440,12 @@ function draw_polygon(data, id, color, layer) {
 
 }
 
+/**
+ * updates the objects coordinates
+ *
+ * @param data
+ * @param id
+ */
 function update_polygon(data, id) {
     svg.selectAll("#" + id)
         .data([data])
@@ -611,6 +653,13 @@ function order_of_magnitude(n) {
     return Math.pow(10, order);
 }
 
+
+/**
+ * Saves the svg object to an svg file
+ *
+ * @param svgEl: the d3.js svg object
+ * @param name: the file name
+ */
 function saveSvg(svgEl, name) {
     svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     var svgData = svgEl.outerHTML;
