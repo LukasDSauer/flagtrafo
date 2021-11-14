@@ -8,14 +8,14 @@ shear flow and the eruption flow.
 
 ## Setup instructions
 
-### Setup using pip
+### Setup using pip (private use)
 
 1. Download the `flag-transformator` source files and unpack them.
 2. Open a command prompt of your choice and navigate to the flag transformator folder.
 3. Execute `pip install -r requirements.txt`.
 4. Start the application server with `python3 src/setup.py`. Open the address shown in the command prompt in your browser, e.g. `http://172.18.108.70:80/`.
 
-### Setup using Docker
+### Setup using Docker (production use)
 
 1. Install `docker` from www.docker.com. (On Windows: Start the Docker desktop client after the installation.)
 2. Download the `flag-transformator` source files and unpack them.

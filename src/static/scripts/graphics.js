@@ -598,7 +598,7 @@ function show_editing_elements() {
  */
 function show_loader() {
     document.getElementById('b-hinttype').style.display = "none";
-    document.getElementById('span-modeinfo').innerHTML = "Loading transformation data.";
+    document.getElementById('span-modeinfo').innerHTML = "Loading transformation data. May take up to 10s.";
     document.getElementById('loader-flags').style.display = "block";
 }
 
