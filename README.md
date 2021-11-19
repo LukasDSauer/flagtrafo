@@ -21,4 +21,4 @@ shear flow and the eruption flow.
 2. Download the `flag-transformator` source files and unpack them.
 3. Open a command prompt of your choice and navigate to the flag transformator folder.
 4. Execute `docker build -t flagtransformator-image .` in order to create a Docker image from the container.
-5. Start the application server with `docker run -d -p 80:80 flagtransformator-image`. Open the address `http://localhost/` in your browser in order to see the app.
+5. Start the application server with `docker run --name flagtransformator-container -d -p 80:80 flagtransformator-image`. Open the address `http://localhost/` in your browser in order to see the app.
