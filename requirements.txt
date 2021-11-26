@@ -3,4 +3,4 @@ Flask-JSON>=0.3.3
 Flask-Navigation>=0.2.0
 simplejson>=3.16.0
 numpy>=1.17.4
--e git+https://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@github.com/LukasDSauer/projflag-lib.git@v2.3.1#egg=flagcomplex&subdirectory=projflag-lib/flagcomplex
+-e git+https://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@github.com/LukasDSauer/projflag-lib.git@v2.3.2#egg=flagcomplex&subdirectory=projflag-lib/flagcomplex
