@@ -1,3 +1,5 @@
+[![Docker Image CI for flagtrafo](https://github.com/LukasDSauer/flagtrafo/actions/workflows/docker-image.yml/badge.svg)](https://github.com/LukasDSauer/flagtrafo/actions/workflows/docker-image.yml)
+
 # flagtrafo - The Flag Transformation Web Application
 
 The `flagtrafo` project is a web application with an interactive user interface for playing with different
