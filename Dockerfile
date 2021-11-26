@@ -1,5 +1,5 @@
 #Download Python from DockerHub and use it
-FROM python:latest
+FROM python:3.9
 
 #Set the working directory in the Docker container
 WORKDIR /srv/flagtrafo-app
