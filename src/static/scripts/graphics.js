@@ -19,9 +19,13 @@ function switch_program_mode_to(mode) {
             document.getElementById('b-hinttype').style.display = "inline";
             document.getElementById('span-modeinfo').innerHTML =
                 "Move slider to transform.";
+        } else {
+            document.getElementById('span-modeinfo').innerHTML =
+                "";
         }
     }
     if (mode === "addFlags") {
+        n_old = n;
         if (us_2dim != null) {
             for (let i = 0; i < us_2dim.length; i++) {
                 svg.selectAll("#u_point" + i.toString()).remove();
@@ -65,7 +69,9 @@ function switch_program_mode_to(mode) {
  */
 function submit_flags_button() {
     if (program_mode === "addPoints" || program_mode === "addLines") {
-        if (n > 2) {
+        // only submit if the user has added something and if the server has
+        // an actual job to do.
+        if (n > 2 && n > n_old) {
             submit_flags_to_server(false);
         } else {
             svg.selectAll("#newpoint").remove();
@@ -207,11 +213,11 @@ function refresh_coordinates() {
  * order to prevent changes from the user.
  */
 function submit_flags_to_server(with_refresh) {
-    if (trafo_type !== "no_trafo") {
+    /*if (trafo_type !== "no_trafo") {
         t = 0;
         t_str = "0";
         refresh_coordinates();
-    }
+    }*/
     hide_editing_elements();
     // Switch off mouse events during loading.
     svg.on("mousemove", null);
@@ -220,6 +226,7 @@ function submit_flags_to_server(with_refresh) {
 
     svg.selectAll("#newpoint").remove();
     svg.selectAll("#newline").remove();
+
 
     var data = {
         "ps": ps_2dim,
@@ -558,9 +565,14 @@ function update_helper_lines(middle_data, outer_data, id) {
  * hides interactive sliders and buttons
  */
 function hide_editing_elements() {
+    // Reset transformation slider to zero
+    reset_slider();
+    // Uncheck all checkboxes
+    $("input:checkbox").attr('checked', false);
+    // Hide all edigitng elements
     ui_elements["all_elements"].forEach(function (item, index) {
         document.getElementById(item).style.display = "none";
-    });
+    });  
 }
 
 /**
@@ -598,7 +610,7 @@ function show_editing_elements() {
  */
 function show_loader() {
     document.getElementById('b-hinttype').style.display = "none";
-    document.getElementById('span-modeinfo').innerHTML = "Loading transformation data.";
+    document.getElementById('span-modeinfo').innerHTML = "Loading transformation data. May take up to 25s.";
     document.getElementById('loader-flags').style.display = "block";
 }
 

@@ -8,7 +8,10 @@ from services.flagcomplex_interface import init_flagcomplex_from_data, \
     rescale_existing_points, compute_no_trafo_data, compute_eruption_data_minus_plus, compute_eruption_data_plus_plus
 
 app = Flask(__name__)
-app.config['DEBUG'] = True
+# Uncomment this line in order to run the app in debug mode.
+# This means that the app is automatically updated whenever you change
+# some part of the code.
+# app.config['DEBUG'] = True
 
 n_max = 10
 
@@ -138,4 +141,4 @@ def get_transformation_data():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=80)

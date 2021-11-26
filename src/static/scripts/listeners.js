@@ -15,9 +15,7 @@ function set_listeners()
 
     // The "Reset transformation" button
     $("#button-traforeset").click(function () {
-        t = 0;
-        slider.value = 0;
-        document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value
+        reset_slider();
         transform_coordinates();
     });
 
@@ -30,7 +28,7 @@ function set_listeners()
             .attr("height", height)
             .attr("id", "background")
             .attr("fill", "#DDDDDD");
-        saveSvg(document.getElementById("svg"), "flag-transformator-img.svg");
+        saveSvg(document.getElementById("svg"), "flagtrafo-img.svg");
         svg.selectAll("#background").remove();
     });
 
@@ -106,4 +104,14 @@ function set_listeners()
             svg.selectAll("#convex").remove();
         }
     });
+}
+
+/**
+ * Resets the transformation slider to 0, and all its implied values.
+ */
+function reset_slider()
+{
+    t = 0;
+    slider.value = 0;
+    document.getElementById("trafovalue").innerHTML = "0"; // Display the default slider value   
 }
