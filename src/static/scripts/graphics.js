@@ -207,11 +207,11 @@ function refresh_coordinates() {
  * order to prevent changes from the user.
  */
 function submit_flags_to_server(with_refresh) {
-    if (trafo_type !== "no_trafo") {
+    /*if (trafo_type !== "no_trafo") {
         t = 0;
         t_str = "0";
         refresh_coordinates();
-    }
+    }*/
     hide_editing_elements();
     // Switch off mouse events during loading.
     svg.on("mousemove", null);
@@ -220,6 +220,7 @@ function submit_flags_to_server(with_refresh) {
 
     svg.selectAll("#newpoint").remove();
     svg.selectAll("#newline").remove();
+
 
     var data = {
         "ps": ps_2dim,
@@ -558,9 +559,10 @@ function update_helper_lines(middle_data, outer_data, id) {
  * hides interactive sliders and buttons
  */
 function hide_editing_elements() {
+    reset_slider();
     ui_elements["all_elements"].forEach(function (item, index) {
         document.getElementById(item).style.display = "none";
-    });
+    });  
 }
 
 /**
