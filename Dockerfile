@@ -11,20 +11,20 @@ COPY start.sh .
 COPY uwsgi.ini .
 #Copy the Flask app code to the working directory
 COPY src/ .
-#Copy nginx configuration file to the nginx folder
-COPY nginx.conf /etc/nginx
 
 #Install nginx web server
 RUN apt-get clean \
     && apt-get -y update
-RUN apt-get -y install nginx
+RUN apt-get -y install nginx \
+    && apt-get -y install python3-dev \
+    && apt-get -y install build-essential
 
 #Install the dependencies
-RUN pip install -r requirements-production.txt
+RUN pip install -r requirements-production.txt --src /usr/local/src
 
-
-
-
-#Run the container
+#Copy nginx configuration file to the nginx folder
+COPY nginx.conf /etc/nginx
+# Make the start file executable
 RUN chmod +x ./start.sh
+# What to do when the container is run: Execute start.sh
 CMD ["./start.sh"]
