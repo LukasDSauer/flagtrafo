@@ -1,4 +1,4 @@
-[![Docker Image CI for flagtrafo](https://github.com/LukasDSauer/flagtrafo/actions/workflows/docker-image.yml/badge.svg)](https://github.com/LukasDSauer/flagtrafo/actions/workflows/docker-image.yml)
+[![Docker Image CI](https://github.com/LukasDSauer/flagtrafo/actions/workflows/docker-image.yml/badge.svg)](https://github.com/LukasDSauer/flagtrafo/actions/workflows/docker-image.yml)
 
 # flagtrafo - The Flag Transformation Web Application
 
