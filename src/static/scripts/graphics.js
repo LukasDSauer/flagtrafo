@@ -22,6 +22,7 @@ function switch_program_mode_to(mode) {
         }
     }
     if (mode === "addFlags") {
+        n_old = n;
         if (us_2dim != null) {
             for (let i = 0; i < us_2dim.length; i++) {
                 svg.selectAll("#u_point" + i.toString()).remove();
@@ -65,7 +66,9 @@ function switch_program_mode_to(mode) {
  */
 function submit_flags_button() {
     if (program_mode === "addPoints" || program_mode === "addLines") {
-        if (n > 2) {
+        // only submit if the user has added something and if the server has
+        // an actual job to do.
+        if (n > 2 && n > n_old) {
             submit_flags_to_server(false);
         } else {
             svg.selectAll("#newpoint").remove();
@@ -600,7 +603,7 @@ function show_editing_elements() {
  */
 function show_loader() {
     document.getElementById('b-hinttype').style.display = "none";
-    document.getElementById('span-modeinfo').innerHTML = "Loading transformation data. May take up to 10s.";
+    document.getElementById('span-modeinfo').innerHTML = "Loading transformation data. May take up to 25s.";
     document.getElementById('loader-flags').style.display = "block";
 }
 
