@@ -2,7 +2,7 @@
 FROM python:3.7.4
 
 #Set the working directory in the Docker container
-WORKDIR /srv/flagtrafo_app
+WORKDIR /srv/flagtrafo-app
 
 #Copy the configuration files to the working directory
 COPY requirements-production.txt .
