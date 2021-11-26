@@ -19,6 +19,9 @@ function switch_program_mode_to(mode) {
             document.getElementById('b-hinttype').style.display = "inline";
             document.getElementById('span-modeinfo').innerHTML =
                 "Move slider to transform.";
+        } else {
+            document.getElementById('span-modeinfo').innerHTML =
+                "";
         }
     }
     if (mode === "addFlags") {
@@ -562,7 +565,11 @@ function update_helper_lines(middle_data, outer_data, id) {
  * hides interactive sliders and buttons
  */
 function hide_editing_elements() {
+    // Reset transformation slider to zero
     reset_slider();
+    // Uncheck all checkboxes
+    $("input:checkbox").attr('checked', false);
+    // Hide all edigitng elements
     ui_elements["all_elements"].forEach(function (item, index) {
         document.getElementById(item).style.display = "none";
     });  

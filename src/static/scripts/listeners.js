@@ -28,7 +28,7 @@ function set_listeners()
             .attr("height", height)
             .attr("id", "background")
             .attr("fill", "#DDDDDD");
-        saveSvg(document.getElementById("svg"), "flag-transformator-img.svg");
+        saveSvg(document.getElementById("svg"), "flagtrafo-img.svg");
         svg.selectAll("#background").remove();
     });
 
